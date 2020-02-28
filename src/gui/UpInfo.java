@@ -18,6 +18,9 @@ import javax.swing.border.EmptyBorder;
 
 import script.Spider;
 
+/**
+ * 展示UP主信息的对话框
+ */
 public class UpInfo extends JDialog implements Runnable {
 
 	private static final long serialVersionUID = 1L;
@@ -26,7 +29,9 @@ public class UpInfo extends JDialog implements Runnable {
 	public Spider.Up up;
 
 	/**
-	 * Create the dialog.
+	 * 创建对话框
+	 * 
+	 * @param up up主的实体类对象
 	 */
 	public UpInfo(Spider.Up up) {
 		setModal(true);
@@ -149,6 +154,9 @@ public class UpInfo extends JDialog implements Runnable {
 		});
 	}
 
+	/**
+	 * 在另一个线程加载UP主的头像
+	 */
 	@Override
 	public void run() {
 		ImageIcon icon = new ImageIcon(up.face_url);

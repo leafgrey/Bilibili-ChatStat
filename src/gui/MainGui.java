@@ -366,6 +366,9 @@ public class MainGui implements Runnable {
 					new Dialog("未选择模式", "请选择弹幕爬取模式（点击“选定”按钮）。").setVisible(true);
 					return;
 				}
+				button_av.setEnabled(false);
+				button_import_2.setEnabled(false);
+				button_uid.setEnabled(false);
 				button_confirm.setEnabled(false);
 				spiderThread = new Thread(new Spider());
 				spiderThread.start();

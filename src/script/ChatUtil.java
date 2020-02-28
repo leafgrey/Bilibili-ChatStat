@@ -2,7 +2,15 @@ package script;
 
 import gui.MainGui;
 
+/**
+ * 处理弹幕的类
+ */
 public class ChatUtil {
+	/**
+	 * 处理弹幕
+	 * 
+	 * @param chat 弹幕实体类对象
+	 */
 	public static void utilChat(Chat chat) {
 		if (Config.public_config.TO_SBC) {
 			MainGui.getInstance().initProgressBar(chat.getCount());

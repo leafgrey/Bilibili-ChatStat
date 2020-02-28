@@ -4,12 +4,23 @@ import java.util.ArrayList;
 
 import gui.MainGui;
 
+/**
+ * 弹幕的实体类
+ */
 public class Chat {
 	private ArrayList<String> chats;
 	private ArrayList<String> users;
 	private ArrayList<Float> time;
 	private ArrayList<Long> date;
 
+	/**
+	 * 创建弹幕
+	 * 
+	 * @param chats 弹幕
+	 * @param users 用户
+	 * @param time  发送时间（指位于视频的什么时候）
+	 * @param date  发送时间（时间戳）
+	 */
 	public Chat(ArrayList<String> chats, ArrayList<String> users, ArrayList<Float> time, ArrayList<Long> date) {
 		this.chats = chats;
 		this.users = users;
@@ -17,34 +28,74 @@ public class Chat {
 		this.date = date;
 	}
 
+	/**
+	 * 获取弹幕列表
+	 * 
+	 * @return 弹幕列表
+	 */
 	public ArrayList<String> getChats() {
 		return chats;
 	}
 
+	/**
+	 * 设置弹幕列表
+	 * 
+	 * @param chats 弹幕列表
+	 */
 	public void setChats(ArrayList<String> chats) {
 		this.chats = chats;
 	}
 
+	/**
+	 * 获取用户列表
+	 * 
+	 * @return 用户列表
+	 */
 	public ArrayList<String> getUsers() {
 		return users;
 	}
 
+	/**
+	 * 设置用户列表
+	 * 
+	 * @return 用户列表
+	 */
 	public void setUsers(ArrayList<String> users) {
 		this.users = users;
 	}
 
+	/**
+	 * 获取时间列表
+	 * 
+	 * @return 时间列表
+	 */
 	public ArrayList<Float> getTime() {
 		return time;
 	}
 
+	/**
+	 * 设置时间列表
+	 * 
+	 * @return 时间列表
+	 */
 	public void setTime(ArrayList<Float> time) {
 		this.time = time;
 	}
 
+	/**
+	 * 获取日期列表
+	 * 
+	 * @return 日期列表
+	 */
 	public ArrayList<Long> getDate() {
 		return date;
 	}
 
+	/**
+	 * 设置日期列表
+	 * 
+	 * @return 日期列表
+	 */
 	public void setDate(ArrayList<Long> date) {
 		this.date = date;
 	}
@@ -52,7 +103,7 @@ public class Chat {
 	/**
 	 * 追加新的弹幕对象到原对象
 	 * 
-	 * @param new_chat
+	 * @param new_chat 新弹幕
 	 */
 	public void append(Chat new_chat) {
 		chats.addAll(new_chat.getChats());
@@ -61,6 +112,14 @@ public class Chat {
 		date.addAll(new_chat.getDate());
 	}
 
+	/**
+	 * 追加新的弹幕对象到原对象
+	 * 
+	 * @param chat  新弹幕
+	 * @param user  新用户
+	 * @param time_ 新时间
+	 * @param date_ 新日期
+	 */
 	public void append(String chat, String user, Float time_, Long date_) {
 		chats.add(chat);
 		users.add(user);
@@ -199,6 +258,11 @@ public class Chat {
 		}
 	}
 
+	/**
+	 * 获取弹幕数量
+	 * 
+	 * @return 数量
+	 */
 	public int getCount() {
 		return chats.size();
 	}

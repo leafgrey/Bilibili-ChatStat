@@ -22,8 +22,9 @@ public class Dialog extends JDialog {
 
 	/**
 	 * 创建对话框
+	 * 
 	 * @param title 标题
-	 * @param text 正文
+	 * @param text  正文
 	 */
 	public Dialog(String title, String text) {
 		setModal(true);
@@ -44,17 +45,15 @@ public class Dialog extends JDialog {
 		JPanel buttonPane = new JPanel();
 		buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
 		getContentPane().add(buttonPane, BorderLayout.SOUTH);
-		{
-			JButton okButton = new JButton("    确定    ");
-			okButton.setActionCommand("OK");
-			okButton.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					dispose();
-				}
-			});
-			buttonPane.add(okButton);
-			getRootPane().setDefaultButton(okButton);
-		}
+		JButton okButton = new JButton("    确定    ");
+		okButton.setActionCommand("OK");
+		okButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				dispose();
+			}
+		});
+		buttonPane.add(okButton);
+		getRootPane().setDefaultButton(okButton);
 	}
 }

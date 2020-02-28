@@ -1,0 +1,6 @@
+n=b03f5f7f11d50a3a /NoDependencies /noroot /version:v4.0.30319 /LegacyServiceBehavior 
+02/28/2020 13:07:07.770 [4448]: All compilation targets are up to date.
+02/28/2020 13:07:07.770 [4448]: ngen returning 0x00000000
+02/28/2020 13:07:07.790 [9900]: Command line: C:\Windows\Microsoft.NET\Framework\v4.0.30319\ngen.exe install System.Runtime.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a /NoDependencies /noroot /version:v4.0.30319 /LegacyServiceBehavior 
+02/28/2020 13:07:08.052 [9900]: All compilation targets are up to date.
+02/28/2020 13:07:08.052 [9900]: ng

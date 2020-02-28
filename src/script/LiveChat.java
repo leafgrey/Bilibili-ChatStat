@@ -18,6 +18,9 @@ import org.json.JSONObject;
 
 import gui.LivePanel;
 
+/**
+ * 直播弹幕爬取
+ */
 public class LiveChat implements Runnable {
 
 	File file;
@@ -25,10 +28,18 @@ public class LiveChat implements Runnable {
 	private static JSONArray total_json;
 	private static String stringBuff = "";
 
+	/**
+	 * 实例化
+	 * 
+	 * @param file 输出的文件
+	 */
 	public LiveChat(File file) {
 		this.file = file;
 	}
 
+	/**
+	 * 运行
+	 */
 	@Override
 	public void run() {
 		chat = new Chat(new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Float>(),
@@ -76,10 +87,9 @@ public class LiveChat implements Runnable {
 					LivePanel.getInstance().log("【发生异常】" + e.getClass().getName());
 					LivePanel.getInstance().log("###############");
 				}
-				//如果弹幕的发送时间早于设定的开始时间，则该弹幕是历史弹幕，不抓取
+				// 如果弹幕的发送时间早于设定的开始时间，则该弹幕是历史弹幕，不抓取
 				if (time < Config.live_config.START_TIME) {
-					LivePanel.getInstance()
-					.log("[历史弹幕，不记录]  " + ((JSONObject) room.get(i)).getString("text"));
+					LivePanel.getInstance().log("[历史弹幕，不记录]  " + ((JSONObject) room.get(i)).getString("text"));
 					continue tick;
 				}
 				new_chat_count++;
@@ -104,21 +114,19 @@ public class LiveChat implements Runnable {
 						Config.live_config.DELAY -= 2000;
 						LivePanel.getInstance().log("###  延时已智能调低2000ms  ###");
 						LivePanel.getInstance().refreshDelayField();
-					}
-					else if (Config.live_config.DELAY >= 2000) {
+					} else if (Config.live_config.DELAY >= 2000) {
 						Config.live_config.DELAY -= 1000;
 						LivePanel.getInstance().log("###  延时已智能调低1000ms  ###");
 						LivePanel.getInstance().refreshDelayField();
-					}
-					else if (Config.live_config.DELAY >= 1000) {
+					} else if (Config.live_config.DELAY >= 1000) {
 						Config.live_config.DELAY -= 600;
 						LivePanel.getInstance().log("###  延时已智能调低600ms  ###");
 						LivePanel.getInstance().refreshDelayField();
-					}else if (Config.live_config.DELAY >= 200) {
+					} else if (Config.live_config.DELAY >= 200) {
 						Config.live_config.DELAY -= 200;
 						LivePanel.getInstance().log("###  延时已智能调低2000ms  ###");
 						LivePanel.getInstance().refreshDelayField();
-					}else {
+					} else {
 						Config.live_config.DELAY = 0;
 						LivePanel.getInstance().log("###  延时已智能设置为0  ###");
 						LivePanel.getInstance().refreshDelayField();
@@ -144,27 +152,25 @@ public class LiveChat implements Runnable {
 							Config.live_config.DELAY -= 1000;
 							LivePanel.getInstance().log("###  延时已智能调低1000ms  ###");
 							LivePanel.getInstance().refreshDelayField();
-						}
-						else if (Config.live_config.DELAY >= 2000) {
+						} else if (Config.live_config.DELAY >= 2000) {
 							Config.live_config.DELAY -= 500;
 							LivePanel.getInstance().log("###  延时已智能调低500ms  ###");
 							LivePanel.getInstance().refreshDelayField();
-						}
-						else if (Config.live_config.DELAY >= 1000) {
+						} else if (Config.live_config.DELAY >= 1000) {
 							Config.live_config.DELAY -= 300;
 							LivePanel.getInstance().log("###  延时已智能调低300ms  ###");
 							LivePanel.getInstance().refreshDelayField();
-						}else if (Config.live_config.DELAY >= 200) {
+						} else if (Config.live_config.DELAY >= 200) {
 							Config.live_config.DELAY -= 100;
 							LivePanel.getInstance().log("###  延时已智能调低100ms  ###");
 							LivePanel.getInstance().refreshDelayField();
-						}else {
+						} else {
 							Config.live_config.DELAY = 0;
 							LivePanel.getInstance().log("###  延时已智能设置为0  ###");
 							LivePanel.getInstance().refreshDelayField();
 						}
 					} else if (average > 7.5) {
-						Config.live_config.DELAY  += (int) (Config.live_config.DELAY * 0.25 + 50);
+						Config.live_config.DELAY += (int) (Config.live_config.DELAY * 0.25 + 50);
 						LivePanel.getInstance().log("###  延时已智能调高（50ms + 25%）  ###");
 						LivePanel.getInstance().refreshDelayField();
 					}
@@ -172,7 +178,7 @@ public class LiveChat implements Runnable {
 			}
 			LivePanel.getInstance().refreshLabel(new_chat_count, buffer, first_run);
 			buffer = 0;
-			if(chat.getCount() > 9) {
+			if (chat.getCount() > 9) {
 				first_run = false;
 			}
 			LivePanel.getInstance().refreshUi();
@@ -185,8 +191,14 @@ public class LiveChat implements Runnable {
 		}
 	}
 
+	/**
+	 * 发送HTML请求
+	 * 
+	 * @return 服务器返回的字符串
+	 * @throws IOException IO异常
+	 */
 	public static String request() throws IOException {
-		try{
+		try {
 			URL url = new URL("https://api.live.bilibili.com/ajax/msg");
 			byte[] postDataBytes = new String("roomid=" + Config.live_config.ROOM).getBytes("UTF-8");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -202,17 +214,26 @@ public class LiveChat implements Runnable {
 			}
 			stringBuff = sb.toString();
 			return sb.toString();
-		}
-		catch(SocketTimeoutException e) {
+		} catch (SocketTimeoutException e) {
 			LivePanel.getInstance().log("【警告】HTTP连接超时");
 			return stringBuff;
 		}
 	}
 
+	/**
+	 * 获取弹幕实体类对象
+	 * 
+	 * @return 弹幕
+	 */
 	public static Chat getChat() {
 		return chat;
 	}
 
+	/**
+	 * 获取存储的json
+	 * 
+	 * @return json
+	 */
 	public static JSONArray getJSONArray() {
 		return total_json;
 	}

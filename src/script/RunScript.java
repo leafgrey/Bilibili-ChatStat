@@ -12,15 +12,27 @@ import java.util.zip.CRC32;
 import gui.MainGui;
 import gui.Table;
 
+/**
+ * 对导入的弹幕进行统计的类
+ */
 public class RunScript implements Runnable {
 	int tab;
 	File[] files;
 
+	/**
+	 * 实例化
+	 * 
+	 * @param tab      选项
+	 * @param xmlFiles xml文件
+	 */
 	public RunScript(int tab, File[] xmlFiles) {
 		this.tab = tab;
 		this.files = xmlFiles;
 	}
 
+	/**
+	 * 开始运行
+	 */
 	@Override
 	public void run() {
 		try {

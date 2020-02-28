@@ -22,6 +22,9 @@ import script.LiveChat;
 import script.OutputManager;
 import javax.swing.JCheckBox;
 
+/**
+ * 直播弹幕爬取的控件类
+ */
 public class LivePanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 	private JTextField field_delay;
@@ -41,7 +44,7 @@ public class LivePanel extends JPanel {
 	private Thread thread;
 
 	/**
-	 * Create the panel.
+	 * 创建控件
 	 */
 	public LivePanel() {
 		LivePanel.instance = this;
@@ -131,7 +134,7 @@ public class LivePanel extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				if (!Config.live_config.STATUS) {
 					FileManager.showFileSaveDialog(instance, "直播弹幕", 1);
-					if(OutputManager.getFile() != null) {
+					if (OutputManager.getFile() != null) {
 						log("###  已选择输出目录  ###");
 						refreshUi();
 					}
@@ -178,12 +181,11 @@ public class LivePanel extends JPanel {
 					}
 					try {
 						Config.live_config.ROOM = Integer.parseInt(field_room.getText());
-					}
-					catch(NumberFormatException err) {
+					} catch (NumberFormatException err) {
 						new Dialog("直播间配置错误", "无法读取房间号。请检查直播间房间号。").setVisible(true);
 						return;
 					}
-					if(Config.live_config.ROOM <= 0) {
+					if (Config.live_config.ROOM <= 0) {
 						new Dialog("直播间配置错误", "直播间房间号必须是大于0的整数。").setVisible(true);
 						return;
 					}
@@ -227,23 +229,46 @@ public class LivePanel extends JPanel {
 
 	}
 
+	/**
+	 * 获取示例
+	 * 
+	 * @return 示例
+	 */
 	public static LivePanel getInstance() {
 		return instance;
 	}
 
+	/**
+	 * 输出日志
+	 * 
+	 * @param log 日志内容
+	 */
 	public void log(String log) {
 		logs.add(0, log);
 	}
 
+	/**
+	 * 更新日志展示的UI
+	 */
 	public void refreshUi() {
 		list.setListData(logs.toArray(new String[0]));
 	}
 
+	/**
+	 * 添加一次爬取成功的次数
+	 */
 	public void addTime() {
 		times++;
 		label_times.setText("爬取成功的次数：" + times + "     零缓冲次数：" + failure);
 	}
 
+	/**
+	 * 刷新状态展示区
+	 * 
+	 * @param new_chat_count 新弹幕的数量，即与上一次爬取的结果不重复的弹幕数量
+	 * @param buffer         缓冲区
+	 * @param first_run      是否是第一次爬取
+	 */
 	public void refreshLabel(int new_chat_count, int buffer, boolean first_run) {
 		count += new_chat_count;
 		if (first_run) {
@@ -261,6 +286,11 @@ public class LivePanel extends JPanel {
 		}
 	}
 
+	/**
+	 * 设置控件是否可用
+	 * 
+	 * @param b 是否可用
+	 */
 	@Override
 	public void setEnabled(boolean b) {
 		super.setEnabled(b);
@@ -270,12 +300,18 @@ public class LivePanel extends JPanel {
 		field_room.setEnabled(b);
 	}
 
+	/**
+	 * 重置状态展示区
+	 */
 	public void reset() {
 		times = 0;
 		count = 0;
 		failure = 0;
 	}
 
+	/**
+	 * 更新爬取延时
+	 */
 	public void refreshDelayField() {
 		field_delay.setText(Config.live_config.DELAY + "");
 	}

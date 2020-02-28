@@ -22,6 +22,9 @@ import javax.swing.event.DocumentListener;
 
 import script.Config;
 
+/**
+ * 每一个选项卡的面板
+ */
 public class TabPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 	private JCheckBox check_ignore_cases;
@@ -44,7 +47,9 @@ public class TabPanel extends JPanel {
 	private JPanel panel;
 
 	/**
-	 * Create the panel.
+	 * 创建面板
+	 * 
+	 * @param tab 选项卡的选项，从1开始
 	 */
 	public TabPanel(int tab) {
 		GridBagLayout gridBagLayout = new GridBagLayout();
@@ -499,11 +504,11 @@ public class TabPanel extends JPanel {
 			break;
 		case 4:
 			textArea.setText(
-					"【月弹幕数量曲线统计】\n该功能可查看弹幕数量随月份变化的情况。\n哔哩哔哩弹幕池总数是固定的，因此会出现一段时间没有新增弹幕的情况。\n查看曲线，请选择“csv文件展示”，然后使用电子表格创建图像。");
+					"【月弹幕数量曲线统计】\n该功能可查看弹幕数量随月份变化的情况。\n哔哩哔哩弹幕池总数是固定的，因此可能出现一段时间没有新增弹幕的情况。\n查看曲线，请选择“csv文件展示”，然后使用电子表格创建图像。");
 			break;
 		case 5:
 			textArea.setText(
-					"【日弹幕数量曲线统计】\n该功能可查看弹幕数量随日期变化的情况。\n哔哩哔哩弹幕池总数是固定的，因此会出现一段时间没有新增弹幕的情况。\n查看曲线，请选择“csv文件展示”，然后使用电子表格创建图像。");
+					"【日弹幕数量曲线统计】\n该功能可查看弹幕数量随日期变化的情况。\n哔哩哔哩弹幕池总数是固定的，因此可能出现一段时间没有新增弹幕的情况。\n查看曲线，请选择“csv文件展示”，然后使用电子表格创建图像。");
 			break;
 		case 6:
 			textArea.setText(
@@ -512,6 +517,9 @@ public class TabPanel extends JPanel {
 		}
 	}
 
+	/**
+	 * 刷新面板
+	 */
 	public void refresh() {
 		check_ignore_cases.setSelected(Config.public_config.IGNORE_CASES);
 		check_to_sbc.setSelected(Config.public_config.TO_SBC);
@@ -536,6 +544,11 @@ public class TabPanel extends JPanel {
 		}
 	}
 
+	/**
+	 * 设置面板是否可用
+	 * 
+	 * @param b 是否可用
+	 */
 	@Override
 	public void setEnabled(boolean b) {
 		super.setEnabled(b);

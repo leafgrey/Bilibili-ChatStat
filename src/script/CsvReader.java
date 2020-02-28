@@ -6,14 +6,30 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
+/**
+ * 读取csv文件的类
+ */
 public class CsvReader {
 	File file;
 
+	/**
+	 * 创建对象
+	 * 
+	 * @param csvFile csv文件
+	 */
 	public CsvReader(File csvFile) {
 		file = csvFile;
 	}
 
-	// 此处代码必须在二十分钟内行云流水地敲出，否则时间久了就看不懂了23333
+	/*
+	 * 不要问我为什么没有注释，我想补注释的时候结果看不懂了233
+	 */
+	/**
+	 * 从csv文件中读取String二维数组
+	 * 
+	 * @return 二维数组
+	 * @throws Exception 任意形式的异常，只要出现了异常就重新创建csv文件
+	 */
 	public String[][] getStringArray() throws Exception {
 		String[] lines = readLines();
 		ArrayList<String[]> arrayList = new ArrayList<>();
@@ -65,6 +81,12 @@ public class CsvReader {
 		return arrayList.toArray(new String[0][]);
 	}
 
+	/**
+	 * 读取行信息
+	 * 
+	 * @return 行
+	 * @throws Exception 异常
+	 */
 	private String[] readLines() throws Exception {
 		ArrayList<String> list = new ArrayList<>();
 		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));

@@ -15,8 +15,17 @@ import org.dom4j.io.SAXReader;
 
 import gui.MainGui;
 
+/**
+ * 从文件中加载xml文件的类
+ */
 public class XmlLoader {
 
+	/**
+	 * 加载xml文件
+	 * 
+	 * @param files 文件数组
+	 * @return 弹幕实体类对象
+	 */
 	public static Chat loadChatFromXml(File[] files) {
 		Chat chat = new Chat(new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Float>(),
 				new ArrayList<Long>());
@@ -46,6 +55,12 @@ public class XmlLoader {
 		return chat;
 	}
 
+	/**
+	 * 加载xml文件
+	 * 
+	 * @param xmls xml字符串
+	 * @return 弹幕实体类对象
+	 */
 	public static Chat loadChatFromXml(String[] xmls) {
 		Chat chat = new Chat(new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Float>(),
 				new ArrayList<Long>());
@@ -74,6 +89,12 @@ public class XmlLoader {
 		return chat;
 	}
 
+	/**
+	 * 加载xml文件
+	 * 
+	 * @param xml xml字符串
+	 * @return 弹幕实体类对象
+	 */
 	public static Chat loadChatFromXml(String xml) {
 		Chat chat = new Chat(new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Float>(),
 				new ArrayList<Long>());
@@ -100,6 +121,13 @@ public class XmlLoader {
 		return chat;
 	}
 
+	/**
+	 * 从文件中获取Document对象
+	 * 
+	 * @param path 路径
+	 * @return Document
+	 * @throws InterruptedException 线程被阻断
+	 */
 	private static Document loadFromFile(String path) throws InterruptedException {
 		Document document = null;
 		try {
@@ -134,6 +162,13 @@ public class XmlLoader {
 		return document;
 	}
 
+	/**
+	 * 从字符串获取Document对象
+	 * 
+	 * @param str xml字符串
+	 * @return Docum
+	 * @throws InterruptedException 线程被阻断
+	 */
 	private static Document loadFromString(String str) throws InterruptedException {
 		Document document = null;
 		try {
@@ -151,8 +186,14 @@ public class XmlLoader {
 	}
 
 	/*
-	 * 在爬取鹿乃的日文版勾指起誓的弹幕时遇到了问题，有人发送了0xffff这个Unicode字符，API网页提示错误，导致xml解析出错，
+	 * 这是在爬取鹿乃的日文版勾指起誓的弹幕时遇到的问题，有人发送了0xffff这个Unicode字符，API网页提示错误，导致xml解析出错，
 	 * 解决方案是替换掉无效字符。 （所以我是不是还得感谢鹿乃和那个发送弹幕的人帮我找到了程序的bug23333）
+	 */
+	/**
+	 * 替换无效的xml字符。该操作需在catch块中进行，否则很浪费资源
+	 * 
+	 * @param str xml字符串
+	 * @return 正常的xml字符串
 	 */
 	private static String replaceChar(String str) {
 		char[] chars = str.toCharArray();

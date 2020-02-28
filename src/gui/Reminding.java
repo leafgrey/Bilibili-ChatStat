@@ -21,15 +21,16 @@ import javax.swing.border.EmptyBorder;
 
 import script.Spider;
 
+/**
+ * “哔哩哔哩小黑屋看守员提醒您”
+ */
 public class Reminding extends JDialog {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private final JPanel contentPanel = new JPanel();
+
 	/**
-	 * Create the dialog.
+	 * 创建对话框
 	 */
 	public Reminding() {
 		setModal(true);
@@ -97,39 +98,39 @@ public class Reminding extends JDialog {
 		});
 		cancelButton.setActionCommand("Cancel");
 		buttonPane.add(cancelButton);
-		
+
 		addWindowListener(new WindowListener() {
-			
+
 			@Override
 			public void windowOpened(WindowEvent e) {
 			}
-			
+
 			@Override
 			public void windowIconified(WindowEvent e) {
 			}
-			
+
 			@Override
 			public void windowDeiconified(WindowEvent e) {
 			}
-			
+
 			@Override
 			public void windowDeactivated(WindowEvent e) {
 			}
-			
+
 			@Override
 			public void windowClosing(WindowEvent e) {
 				Spider.getInstance().getThread().interrupt();
 			}
-			
+
 			@Override
 			public void windowClosed(WindowEvent e) {
 				Spider.getInstance().getThread().interrupt();
 			}
-			
+
 			@Override
 			public void windowActivated(WindowEvent e) {
 			}
 		});
 	}
-	
+
 }

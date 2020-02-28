@@ -18,17 +18,37 @@ import org.json.JSONArray;
 import gui.Dialog;
 import gui.MainGui;
 
+/**
+ * 文件输出处理类
+ */
 public class OutputManager {
 	private static File file;
 
+	/**
+	 * 获取配置好的文件
+	 * 
+	 * @return 文件
+	 */
 	public static File getFile() {
 		return file;
 	}
 
+	/**
+	 * 设置文件
+	 * 
+	 * @param file 文件
+	 */
 	public static void setFile(File file) {
 		OutputManager.file = file;
 	}
 
+	/**
+	 * 保存到csv文件
+	 * 
+	 * @param titles   表头，可为null
+	 * @param lists    数据列表
+	 * @param autoOpen 是否自动打开保存的文件
+	 */
 	public static void saveToCsv(String[] titles, ArrayList<?>[] lists, boolean autoOpen) {
 		FileOutputStream out = null;
 		OutputStreamWriter osw = null;
@@ -57,13 +77,13 @@ public class OutputManager {
 				}
 				for (int j = 0; j < lists.length - 1; j++) {
 					if (!(lists[j].get(0) instanceof String)) {
-						bw.append(lists[j].get(i).toString());
+						bw.append(lists[j].get(i).toString() + ",");
 					} else if (lists[j].get(i).toString().contains(",") || lists[j].get(i).toString().contains(",")) {
 						String string = lists[j].get(i).toString();
 						string = string.replace("\"", "\"\"");
 						bw.append("\"" + string + "\",");
 					} else {
-						bw.append("\"" + lists[j].get(i) + "\",");
+						bw.append(lists[j].get(i) + ",");
 					}
 				}
 				if (!(lists[lists.length - 1].get(0) instanceof String)) {
@@ -72,9 +92,9 @@ public class OutputManager {
 						|| lists[lists.length - 1].get(i).toString().contains(",")) {
 					String string = lists[lists.length - 1].get(i).toString();
 					string = string.replace("\"", "\"\"");
-					bw.append("\"" + string + "\",\n");
+					bw.append("\"" + string + "\"\n");
 				} else {
-					bw.append("\"" + lists[lists.length - 1].get(i) + "\",\n");
+					bw.append(lists[lists.length - 1].get(i) + "\n");
 				}
 			}
 		} catch (Exception e) {
@@ -115,6 +135,11 @@ public class OutputManager {
 		}
 	}
 
+	/**
+	 * 保存到json文件
+	 * 
+	 * @param jsonArray 要保存的json数组
+	 */
 	public static void saveToJson(JSONArray jsonArray) {
 		try {
 			file = new File(OutputManager.getFile().getPath() + ".json");
@@ -132,10 +157,21 @@ public class OutputManager {
 		}
 	}
 
+	/**
+	 * 保存到xml文件
+	 * 
+	 * @param chat 弹幕实体类对象
+	 */
 	public static void saveToXml(Chat chat) {
 		saveToXml(chat, file.getPath() + ".xml");
 	}
 
+	/**
+	 * 保存到xml文件
+	 * 
+	 * @param chat     弹幕实体类对象
+	 * @param filePath 指定文件路径
+	 */
 	public static void saveToXml(Chat chat, String filePath) {
 		try {
 			file = new File(filePath);
@@ -172,10 +208,21 @@ public class OutputManager {
 		}
 	}
 
+	/**
+	 * 保存到xml文件
+	 * 
+	 * @param chatStr 字符串形式的弹幕
+	 */
 	public static void saveToXml(String chatStr) {
 		saveToXml(chatStr, file.getPath());
 	}
 
+	/**
+	 * 保存到xml文件
+	 * 
+	 * @param chatStr  字符串形式的弹幕
+	 * @param filePath 文件路径
+	 */
 	public static void saveToXml(String chatStr, String filePath) {
 		File file = new File(filePath);
 		try {
@@ -196,6 +243,12 @@ public class OutputManager {
 		}
 	}
 
+	/**
+	 * 保存到xml文件(批量保存)
+	 * 
+	 * @param data      弹幕数组
+	 * @param fileNames 文件路径数组
+	 */
 	@Deprecated
 	public static void saveToXmls(String[] data, String[] fileNames) {
 		file.mkdirs();
@@ -211,11 +264,18 @@ public class OutputManager {
 				bw.close();
 			} catch (IOException e) {
 				e.printStackTrace();
-				new Dialog("输出失败", "很抱歉，输出为xml失败。\n\n" + e.getClass().getName() + "\n" + e.getMessage()).setVisible(true);
+				new Dialog("输出失败", "很抱歉，输出为xml失败。\n\n" + e.getClass().getName() + "\n" + e.getMessage())
+						.setVisible(true);
 			}
 		}
 	}
 
+	/**
+	 * 替换非法的文件字符
+	 * 
+	 * @param fileName 文件名
+	 * @return 合法的文件名
+	 */
 	public static String replaceFileName(String fileName) {
 		Pattern pattern = Pattern.compile("[\\\\/:\\*\\?\\\"<>\\|]");
 		Matcher matcher = pattern.matcher(fileName);

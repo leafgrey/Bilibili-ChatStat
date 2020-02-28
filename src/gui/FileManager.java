@@ -22,6 +22,12 @@ public class FileManager {
 	private static File defaultDir;
 	private static boolean dirExists = true;// 用于选择文件夹，指示文件夹原来是否存在，如果原来不存在，在取消选择后需删除文件夹
 
+	/**
+	 * 展示打开文件列表的对话框
+	 * 
+	 * @param parent 父控件
+	 * @param list   JList对象
+	 */
 	public void showFileOpenDialog(Component parent, JList<String> list) {
 		JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setCurrentDirectory(new File("."));
@@ -57,7 +63,12 @@ public class FileManager {
 			list.setListData(arrayList.toArray(new String[0]));
 		}
 	}
-	
+
+	/**
+	 * 打开文件选择器，用于读取txt文件
+	 * 
+	 * @param parent 父控件
+	 */
 	public void showFileOpenDialogForTxt(Component parent) {
 		JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setCurrentDirectory(new File("."));
@@ -71,27 +82,26 @@ public class FileManager {
 			MainGui.getInstance().log("已选定txt文件： " + file.getPath());
 		}
 	}
-	
+
 	/**
+	 * 展示保存直播弹幕的对话框
 	 * 
-	 * @param parent
-	 * @param fileName
-	 * @param mode 0：输出为csv文件；1：直播弹幕输出；2：单视频弹幕输出（单P）；3：输出至目录
+	 * @param parent   父控件
+	 * @param fileName 文件名（不包含后缀）
+	 * @param mode     模式，0：输出为csv文件；1：直播弹幕输出；2：单视频弹幕输出（单P）；3：输出至目录
 	 */
 	public static void showFileSaveDialog(Component parent, String fileName, int mode) {
 		JFileChooser fileChooser = new JFileChooser();
 		if (mode == 0) {
 			fileChooser.setSelectedFile(new File(replaceFileName(fileName) + ".csv"));
 			fileChooser.setFileFilter(new FileNameExtensionFilter("*.csv", "csv"));
-		} else if(mode == 1){
+		} else if (mode == 1) {
 			fileChooser.setSelectedFile(new File(replaceFileName(fileName)));
 			fileChooser.setFileFilter(new FileNameExtensionFilter("*.*（输出时自动补充后缀名）", ".*"));
-		}
-		else if(mode == 2) {
+		} else if (mode == 2) {
 			fileChooser.setSelectedFile(new File(replaceFileName(fileName) + ".xml"));
 			fileChooser.setFileFilter(new FileNameExtensionFilter("*.xml", "xml"));
-		}
-		else if(mode == 3) {
+		} else if (mode == 3) {
 			fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			File dir = new File(fileChooser.getCurrentDirectory() + "\\" + replaceFileName(fileName) + "\\");
 			defaultDir = dir;
@@ -104,26 +114,36 @@ public class FileManager {
 		if (result == JFileChooser.APPROVE_OPTION) {
 			File file = fileChooser.getSelectedFile();
 			OutputManager.setFile(file);
-			if(OutputManager.getFile() == null) {
-				if(!dirExists) {
+			// 删除临时创建的文件夹
+			if (OutputManager.getFile() == null) {
+				if (!dirExists) {
 					deleteTempDir();
 				}
 			}
 		}
 	}
-	
+
+	/**
+	 * 替换不合法的字符
+	 * 
+	 * @param fileName 文件名
+	 * @return 合法的文件名
+	 */
 	public static String replaceFileName(String fileName) {
 		Pattern pattern = Pattern.compile("[\\\\/:\\*\\?\\\"<>\\|]");
 		Matcher matcher = pattern.matcher(fileName);
 		return matcher.replaceAll("");
 	}
-	
+
+	/**
+	 * 删除临时创建的文件夹
+	 */
 	public static void deleteTempDir() {
-		if(defaultDir != null && !dirExists) {
+		if (defaultDir != null && !dirExists) {
 			defaultDir.delete();
 			dirExists = true;
 			defaultDir = null;
 		}
 	}
-	
+
 }
