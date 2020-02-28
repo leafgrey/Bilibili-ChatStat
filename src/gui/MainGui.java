@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -112,6 +113,7 @@ public class MainGui implements Runnable {
 	private JButton button_2;
 	private File txtFile = null;
 	private ArrayList<String> logs;
+	private ImageIcon icon;
 
 	/**
 	 * 主方法
@@ -146,7 +148,9 @@ public class MainGui implements Runnable {
 	private void initialize() {
 		Thread jsonThread = new Thread(this);
 		logs = new ArrayList<>();
+		icon = new ImageIcon(MainGui.class.getResource("/img/icon.png"));
 		frame = new JFrame();
+		frame.setIconImage(icon.getImage());
 		fileManager = new FileManager();
 		frame.setTitle("ChatStat - 哔哩哔哩弹幕统计工具 by JellyBlack");
 		frame.setBounds(100, 100, 900, 650);

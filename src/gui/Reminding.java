@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -35,6 +36,7 @@ public class Reminding extends JDialog {
 	public Reminding() {
 		setModal(true);
 		setTitle("Œ¬‹∞Ã· æ");
+		setIconImage(new ImageIcon(MainGui.class.getResource("/img/icon.png")).getImage());
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 400, 230);
 		setLocationRelativeTo(null);

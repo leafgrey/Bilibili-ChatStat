@@ -6,6 +6,7 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
@@ -29,6 +30,7 @@ public class Dialog extends JDialog {
 	public Dialog(String title, String text) {
 		setModal(true);
 		setTitle(title);
+		setIconImage(new ImageIcon(MainGui.class.getResource("/img/icon.png")).getImage());
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 300, 250);
 		setLocationRelativeTo(null);

@@ -5,6 +5,7 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
@@ -28,6 +29,7 @@ public class Table extends JDialog {
 	public Table(Object[] title, Object[][] data) {
 		setTitle("统计结果");
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		setIconImage(new ImageIcon(MainGui.class.getResource("/img/icon.png")).getImage());
 		setBounds(100, 100, 400, 550);
 		setLocationRelativeTo(null);
 		getContentPane().setLayout(new BorderLayout());

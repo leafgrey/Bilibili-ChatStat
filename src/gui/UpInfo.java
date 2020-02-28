@@ -37,6 +37,7 @@ public class UpInfo extends JDialog implements Runnable {
 		setModal(true);
 		setTitle("确认UP主信息");
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		setIconImage(new ImageIcon(MainGui.class.getResource("/img/icon.png")).getImage());
 		this.up = up;
 		setBounds(100, 100, 700, 300);
 		setLocationRelativeTo(null);
