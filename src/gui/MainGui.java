@@ -152,7 +152,7 @@ public class MainGui implements Runnable {
 		frame = new JFrame();
 		frame.setIconImage(icon.getImage());
 		fileManager = new FileManager();
-		frame.setTitle("ChatStat - 哔哩哔哩弹幕统计工具 by JellyBlack");
+		frame.setTitle("ChatStat - 哔哩哔哩弹幕统计工具 1.1.0 by JellyBlack");
 		frame.setBounds(100, 100, 900, 650);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -165,7 +165,7 @@ public class MainGui implements Runnable {
 
 		JTextArea textArea = new JTextArea();
 		textArea.setBackground(new Color(240, 240, 240));
-		textArea.setText(" 欢迎使用 ChatStat ！\n 使用教程请前往源码仓库：https://github.com/JellyBlack/Bilibili-ChatStat");
+		textArea.setText(" 欢迎使用 ChatStat 1.1.0！\n 使用教程请前往源码仓库：https://github.com/JellyBlack/Bilibili-ChatStat");
 		textArea.setEditable(false);
 		textArea.setLineWrap(true);
 		north_panel.add(textArea, BorderLayout.NORTH);

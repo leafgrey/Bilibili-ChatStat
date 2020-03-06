@@ -52,7 +52,20 @@ public class LiveChat implements Runnable {
 		for (int i = 0; i < stat.length; i++) {
 			stat[i] = 0;
 		}
-		LivePanel.getInstance().log("###  抓取已开始  ###");
+		LivePanel.getInstance().log("###  正在处理房间号  ###");
+		try {
+			String json = getDataFromServer(
+					"https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid=" + Config.live_config.ROOM);
+			String room = new JSONObject(json).getJSONObject("data").getString("roomid");
+			Config.live_config.ROOM = Integer.parseInt(room);
+		} catch (IOException | JSONException | NumberFormatException e) {
+			LivePanel.getInstance().log("###############");
+			LivePanel.getInstance().log(e.getMessage());
+			LivePanel.getInstance().log("【发生异常】" + e.getClass().getName());
+			LivePanel.getInstance().log("###############");
+			return;
+		}
+		LivePanel.getInstance().log("###  处理完毕，抓取已开始  ###");
 		LivePanel.getInstance().refreshUi();
 		while (Config.live_config.STATUS) {
 			JSONObject jsonObject = null;
@@ -71,8 +84,7 @@ public class LiveChat implements Runnable {
 			LivePanel.getInstance().addTime();
 			tick: for (int i = 0; i < room.length(); i++) {
 				for (int j = 0; j < jsonArray_old.length(); j++) {
-					if ((((JSONObject) room.get(i)).get("rnd"))
-							.equals(((JSONObject) jsonArray_old.get(j)).get("rnd"))) {
+					if ((room.getJSONObject(i).toString()).equals(jsonArray_old.getJSONObject(j).toString())) {
 						buffer++;
 						continue tick;
 					}
@@ -218,6 +230,28 @@ public class LiveChat implements Runnable {
 			LivePanel.getInstance().log("【警告】HTTP连接超时");
 			return stringBuff;
 		}
+	}
+
+	/**
+	 * 从服务器获取字符串
+	 * 
+	 * @param url_ url
+	 * @return 字符串
+	 * @throws IOException IO异常
+	 */
+	private String getDataFromServer(String url_) throws IOException {
+		URL url = new URL(url_);
+		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		conn.setRequestMethod("GET");
+		conn.setDoOutput(true);
+		conn.setConnectTimeout(20000);
+		conn.setReadTimeout(20000);
+		Reader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+		StringBuilder sb = new StringBuilder();
+		for (int c; (c = in.read()) >= 0;) {
+			sb.append((char) c);
+		}
+		return sb.toString();
 	}
 
 	/**
