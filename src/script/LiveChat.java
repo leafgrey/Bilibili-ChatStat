@@ -59,11 +59,18 @@ public class LiveChat implements Runnable {
 			String room = new JSONObject(json).getJSONObject("data").getString("roomid");
 			Config.live_config.ROOM = Integer.parseInt(room);
 		} catch (IOException | JSONException | NumberFormatException e) {
-			LivePanel.getInstance().log("###############");
-			LivePanel.getInstance().log(e.getMessage());
-			LivePanel.getInstance().log("【发生异常】" + e.getClass().getName());
-			LivePanel.getInstance().log("###############");
-			return;
+			try {
+				String json = getDataFromServer(
+						"https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid=" + Config.live_config.ROOM);
+				int room = new JSONObject(json).getJSONObject("data").getInt("roomid");
+				Config.live_config.ROOM = room;
+			} catch (IOException | JSONException | NumberFormatException err) {
+				LivePanel.getInstance().log("###############");
+				LivePanel.getInstance().log(e.getMessage());
+				LivePanel.getInstance().log("【发生异常】" + err.getClass().getName());
+				LivePanel.getInstance().log("###############");
+				return;
+			}
 		}
 		LivePanel.getInstance().log("###  处理完毕，抓取已开始  ###");
 		LivePanel.getInstance().refreshUi();
