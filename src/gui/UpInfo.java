@@ -93,15 +93,22 @@ public class UpInfo extends JDialog implements Runnable {
 		label_name.setText("    UP主： " + up.name);
 		label_sexAndUid.setText("    性别： " + up.sex + "           UID: " + up.uid + "           等级： " + up.level);
 		label_sign.setText("    简介： " + up.sign);
+		/*
+		 * 认证说明见哔哩哔哩官方帮助中心 https://www.bilibili.com/blackboard/help.html#官方认证相关?id=
+		 * 94b2f717f1de45228b01b473458e1e9e
+		 */
 		switch (up.role) {
 		case 0:
 			label_role.setText("    认证信息： 无认证");
 			break;
 		case 1:
-			label_role.setText("    认证信息： 个人认证（黄色闪电）");
+			label_role.setText("    认证信息： 个人认证 - 知名UP主认证（黄色小闪电）");
 			break;
 		case 2:
-			label_role.setText("    认证信息： 企业/机构认证（蓝色闪电）");
+			label_role.setText("    认证信息： 个人认证 - 身份认证（黄色小闪电）");
+			break;
+		default:
+			label_role.setText("    认证信息： 企业/机构认证（蓝色小闪电）");
 			break;
 		}
 		label_videos.setText("    视频总数： " + up.videos + "   （一个视频可能分多P,每P的弹幕是独立的）");

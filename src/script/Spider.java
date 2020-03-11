@@ -41,6 +41,8 @@ public class Spider implements Runnable {
 		currentThread = Thread.currentThread();
 		MainGui.getInstance().setButtonText("正在准备，请稍候");
 		MainGui.getInstance().log("准备工作正在进行，请稍候......");
+		int failures = 0;// 对于不直接返回的异常，每发生一次该变量加一
+		MainGui.getInstance().setEnabled(false);
 		if (Config.spider_config.mode == 0) {
 			confirmed = false;
 			try {
@@ -53,12 +55,14 @@ public class Spider implements Runnable {
 				if (pages.length == 0) {
 					MainGui.getInstance().log("【警告】弹幕爬取失败，视频分P数为0。");
 					MainGui.getInstance().reset();
+					MainGui.getInstance().setEnabled(true);
 					return;
 				}
 				if (pages.length == 1) {
 					FileManager.showFileSaveDialog(null, getUpName(data) + " - " + title, 2);
 					if (OutputManager.getFile() == null) {
 						MainGui.getInstance().log("您未选择输出文件，爬取已终止");
+						MainGui.getInstance().setEnabled(true);
 						MainGui.getInstance().reset();
 						return;
 					}
@@ -70,7 +74,9 @@ public class Spider implements Runnable {
 						// 继续执行操作
 						if (!confirmed) {
 							MainGui.getInstance().log("您已取消爬取");
+							OutputManager.setFile(null);
 							MainGui.getInstance().reset();
+							MainGui.getInstance().setEnabled(true);
 							return;
 						}
 						MainGui.getInstance().log("视频弹幕爬取开始");
@@ -83,17 +89,21 @@ public class Spider implements Runnable {
 							MainGui.getInstance().log("【警告】弹幕爬取失败： " + e1.toString());
 							MainGui.getInstance().reset();
 							e1.printStackTrace();
+							MainGui.getInstance().setEnabled(true);
+							MainGui.getInstance().log("爬取完毕，共1处错误，您可以查看爬取日志");
 							return;
 						}
 						OutputManager.saveToXml(chatStr);
-						MainGui.getInstance().log("爬取成功！");
+						MainGui.getInstance().log("爬取成功，一切顺利！");
 						MainGui.getInstance().reset();
+						MainGui.getInstance().setEnabled(true);
 						OutputManager.setFile(null);
 					}
 				} else {
 					FileManager.showFileSaveDialog(null, "", 3);
 					if (OutputManager.getFile() == null) {
 						MainGui.getInstance().log("您未选择输出目录，爬取已终止");
+						MainGui.getInstance().setEnabled(true);
 						MainGui.getInstance().reset();
 						return;
 					}
@@ -105,6 +115,8 @@ public class Spider implements Runnable {
 						// 继续执行操作
 						if (!confirmed) {
 							MainGui.getInstance().log("您已取消爬取");
+							OutputManager.setFile(null);
+							MainGui.getInstance().setEnabled(true);
 							MainGui.getInstance().reset();
 							return;
 						}
@@ -116,28 +128,38 @@ public class Spider implements Runnable {
 							String chatStr = null;
 							try {
 								chatStr = getChatByCid(pages[i]);
-								MainGui.getInstance().log("分P： " + (i + 1) + "P弹幕爬取完毕");
+								MainGui.getInstance().log("P" + (i + 1) + " （共" + pages.length + "P）弹幕爬取完毕");
 							} catch (ParseException e1) {
-								MainGui.getInstance().log("【警告】弹幕爬取失败： " + e1.toString());
+								MainGui.getInstance()
+										.log("【警告】P" + (i + 1) + " （共" + pages.length + "P）弹幕爬取失败： " + e1.toString());
+								failures++;
 								e1.printStackTrace();
+								randomSleep();
 							}
 							OutputManager.saveToXml(chatStr,
 									OutputManager.getFile().getPath() + "\\" + OutputManager.replaceFileName(name
-											+ " - " + title + " （" + (i + 1) + "P：" + getPageName(data, i) + "）.xml"));
+											+ " - " + title + " （P" + (i + 1) + "：" + getPageName(data, i) + "）.xml"));
 							randomSleep();
 						}
 						OutputManager.setFile(null);
-						MainGui.getInstance().log("爬取成功！");
+						if (failures == 0) {
+							MainGui.getInstance().log("爬取成功，一切顺利！");
+						} else {
+							MainGui.getInstance().log("爬取完毕，共" + failures + "处错误，您可以查看爬取日志");
+						}
 						MainGui.getInstance().reset();
+						MainGui.getInstance().setEnabled(true);
 					}
 				}
 			} catch (IOException e) {
 				MainGui.getInstance().log("【警告】弹幕爬取失败： " + e.toString());
 				MainGui.getInstance().reset();
+				MainGui.getInstance().setEnabled(true);
 				e.printStackTrace();
 				return;
 			} catch (JSONException e) {
 				MainGui.getInstance().log("【警告】在获取av" + Config.spider_config.avs[0] + "的弹幕时发生错误，视频可能不存在");
+				MainGui.getInstance().setEnabled(true);
 				MainGui.getInstance().reset();
 				e.printStackTrace();
 				return;
@@ -148,6 +170,7 @@ public class Spider implements Runnable {
 				FileManager.showFileSaveDialog(null, "", 3);
 				if (OutputManager.getFile() == null) {
 					MainGui.getInstance().log("您未选择输出目录，爬取已终止");
+					MainGui.getInstance().setEnabled(true);
 					MainGui.getInstance().reset();
 					return;
 				}
@@ -160,6 +183,8 @@ public class Spider implements Runnable {
 					if (!confirmed) {
 						FileManager.deleteTempDir();
 						MainGui.getInstance().log("您已取消爬取");
+						OutputManager.setFile(null);
+						MainGui.getInstance().setEnabled(true);
 						MainGui.getInstance().reset();
 						return;
 					}
@@ -173,45 +198,61 @@ public class Spider implements Runnable {
 							data = getVideoInfoJson(avs[i] + "");
 						} catch (JSONException e) {
 							MainGui.getInstance().log("【警告】在获取av" + Config.spider_config.avs[i] + "的弹幕时发生错误，视频可能不存在");
+							failures++;
+							randomSleep();
 							continue;
 						}
-						String name = getUpName(data);
-						String title = getVideoTitle(data);
-						pages = getVideoPages(data);
-						for (int j = 0; j < pages.length; j++) {
-							String chatStr = null;
-							try {
-								chatStr = getChatByCid(pages[j]);
-							} catch (ParseException e1) {
-								MainGui.getInstance().log("【警告】弹幕爬取失败： " + e1.toString());
-								e1.printStackTrace();
+						try {
+							String name = getUpName(data);
+							String title = getVideoTitle(data);
+							pages = getVideoPages(data);
+							for (int j = 0; j < pages.length; j++) {
+								String chatStr = null;
+								try {
+									chatStr = getChatByCid(pages[j]);
+								} catch (ParseException e1) {
+									MainGui.getInstance().log(
+											"【警告】P" + (j + 1) + " （共" + pages.length + "P）弹幕爬取失败： " + e1.toString());
+									e1.printStackTrace();
+									failures++;
+									randomSleep();
+									continue;
+								}
+								if (pages.length == 1) {
+									OutputManager.saveToXml(chatStr, OutputManager.getFile().getPath() + "\\"
+											+ OutputManager.replaceFileName(name + " - " + title + ".xml"));
+									MainGui.getInstance().log("第 " + (i + 1) + " / " + avs.length + " 个视频爬取完毕");
+								} else {
+									OutputManager.saveToXml(chatStr,
+											OutputManager.getFile().getPath() + "\\"
+													+ OutputManager.replaceFileName(name + " - " + title + " （P"
+															+ (j + 1) + "：" + getPageName(data, j) + "）.xml"));
+									MainGui.getInstance().log("第 " + (i + 1) + " / " + avs.length + " 个视频（P" + (j + 1)
+											+ " / 共" + pages.length + "P）爬取完毕");
+								}
+								randomSleep();
 							}
-							if (pages.length == 1) {
-								OutputManager.saveToXml(chatStr, OutputManager.getFile().getPath() + "\\"
-										+ OutputManager.replaceFileName(name + " - " + title + ".xml"));
-								MainGui.getInstance().log("第 " + (i + 1) + " 个视频爬取完毕");
-							} else {
-								OutputManager.saveToXml(chatStr,
-										OutputManager.getFile().getPath() + "\\"
-												+ OutputManager.replaceFileName(name + " - " + title + " （" + (j + 1)
-														+ "P：" + getPageName(data, j) + "）.xml"));
-								MainGui.getInstance().log("第 " + (i + 1) + " 个视频（" + (j + 1) + "P）爬取完毕");
-							}
+						} catch (JSONException e) {
+							MainGui.getInstance()
+									.log("【警告】P" + (i + 1) + " （共" + pages.length + "P）弹幕爬取失败： " + e.toString());
+							failures++;
+							e.printStackTrace();
 							randomSleep();
 						}
 					}
 					OutputManager.setFile(null);
-					MainGui.getInstance().log("爬取成功！");
+					if (failures == 0) {
+						MainGui.getInstance().log("爬取成功，一切顺利！");
+					} else {
+						MainGui.getInstance().log("爬取完毕，共" + failures + "处错误，您可以查看爬取日志");
+					}
 					MainGui.getInstance().reset();
+					MainGui.getInstance().setEnabled(true);
 				}
 			} catch (IOException e) {
 				MainGui.getInstance().log("【警告】弹幕爬取失败： " + e.toString());
 				MainGui.getInstance().reset();
-				e.printStackTrace();
-				return;
-			} catch (JSONException e) {
-				MainGui.getInstance().log("【警告】在获取视频弹幕时发生错误：" + e.toString());
-				MainGui.getInstance().reset();
+				MainGui.getInstance().setEnabled(true);
 				e.printStackTrace();
 				return;
 			}
@@ -224,6 +265,7 @@ public class Spider implements Runnable {
 				} catch (JSONException e) {
 					MainGui.getInstance().log("【警告】无法获取UP主信息，UID可能不存在");
 					MainGui.getInstance().reset();
+					MainGui.getInstance().setEnabled(true);
 					e.printStackTrace();
 					return;
 				}
@@ -235,7 +277,9 @@ public class Spider implements Runnable {
 					// 继续执行操作
 					if (!confirmed) {
 						MainGui.getInstance().log("您已取消爬取");
+						OutputManager.setFile(null);
 						MainGui.getInstance().reset();
+						MainGui.getInstance().setEnabled(true);
 						return;
 					}
 					MainGui.getInstance().log("您已确认UP主信息");
@@ -247,6 +291,7 @@ public class Spider implements Runnable {
 						FileManager.deleteTempDir();
 						MainGui.getInstance().log("您未选择输出目录，爬取已终止");
 						MainGui.getInstance().reset();
+						MainGui.getInstance().setEnabled(true);
 						return;
 					}
 					MainGui.getInstance().log("您已选择输出目录：" + OutputManager.getFile().getPath());
@@ -258,12 +303,23 @@ public class Spider implements Runnable {
 						if (!confirmed) {
 							FileManager.deleteTempDir();
 							MainGui.getInstance().log("您已取消爬取");
+							OutputManager.setFile(null);
+							MainGui.getInstance().setEnabled(true);
 							MainGui.getInstance().reset();
 							return;
 						}
 						MainGui.getInstance().log("视频弹幕爬取开始");
 						MainGui.getInstance().setButtonText("正在爬取中...");
-						String[] avs = getAvsOfUp(up.uid);
+						String[] avs = null;
+						try {
+							avs = getAvsOfUp(up.uid);
+						} catch (JSONException error) {
+							MainGui.getInstance().log("【警告】无法获取UP主的视频列表：" + err.toString());
+							MainGui.getInstance().reset();
+							MainGui.getInstance().setEnabled(true);
+							e.printStackTrace();
+							return;
+						}
 						MainGui.getInstance().log("已获取UP主的所有视频，总数为 " + avs.length);
 						confirmed = false;
 						for (int i = 0; i < up.videos; i++) {
@@ -272,42 +328,62 @@ public class Spider implements Runnable {
 								data = getVideoInfoJson(avs[i] + "");
 							} catch (JSONException error) {
 								MainGui.getInstance().log("【警告】在获取av" + avs[i] + "的弹幕时发生错误，视频可能不存在");
+								failures++;
+								randomSleep();
 								continue;
 							}
-							String title = getVideoTitle(data);
-							pages = getVideoPages(data);
+							String title = null;
+							try {
+								title = getVideoTitle(data);
+								pages = getVideoPages(data);
+							} catch (JSONException error) {
+								MainGui.getInstance().log("【警告】无法获取av" + avs[i] + "的标题或分P列表：" + error.toString());
+								error.printStackTrace();
+								failures++;
+								randomSleep();
+								continue;
+							}
 							for (int j = 0; j < pages.length; j++) {
 								String chatStr = null;
 								try {
 									chatStr = getChatByCid(pages[j]);
 								} catch (ParseException e1) {
-									MainGui.getInstance().log("【警告】弹幕爬取失败： " + e1.toString());
-									MainGui.getInstance().reset();
+									MainGui.getInstance().log(
+											"【警告】P" + (j + 1) + " （共" + pages.length + "P）弹幕爬取失败： " + e1.toString());
 									e1.printStackTrace();
-									return;
+									failures++;
+									randomSleep();
+									continue;
 								}
 								if (pages.length == 1) {
 									OutputManager.saveToXml(chatStr, OutputManager.getFile().getPath() + "\\"
 											+ OutputManager.replaceFileName(up.name + " - " + title + ".xml"));
-									MainGui.getInstance().log("第 " + (i + 1) + " 个视频爬取完毕");
+									MainGui.getInstance().log("第 " + (i + 1) + " / " + avs.length + " 个视频爬取完毕");
 								} else {
 									OutputManager.saveToXml(chatStr,
 											OutputManager.getFile().getPath() + "\\"
-													+ OutputManager.replaceFileName(up.name + " - " + title + " （"
-															+ (j + 1) + "P：" + getPageName(data, j) + "）.xml"));
-									MainGui.getInstance().log("第 " + (i + 1) + " 个视频（" + (j + 1) + "P）爬取完毕");
+													+ OutputManager.replaceFileName(up.name + " - " + title + " （P"
+															+ (j + 1) + "：" + getPageName(data, j) + "）.xml"));
+									MainGui.getInstance().log("第 " + (i + 1) + " / " + avs.length + " 个视频（P" + (j + 1)
+											+ " / 共" + pages.length + "P）爬取完毕");
 								}
 								randomSleep();
 							}
 						}
 						OutputManager.setFile(null);
-						MainGui.getInstance().log("爬取成功！");
+						if (failures == 0) {
+							MainGui.getInstance().log("爬取成功，一切顺利！");
+						} else {
+							MainGui.getInstance().log("爬取完毕，共" + failures + "处错误，您可以查看爬取日志");
+						}
 						MainGui.getInstance().reset();
+						MainGui.getInstance().setEnabled(true);
 					}
 				}
 			} catch (IOException e) {
 				MainGui.getInstance().log("【警告】弹幕爬取失败： " + e.toString());
 				MainGui.getInstance().reset();
+				MainGui.getInstance().setEnabled(true);
 				e.printStackTrace();
 				return;
 			}
@@ -353,7 +429,7 @@ public class Spider implements Runnable {
 		return sb.toString();
 	}
 
-	private int getUpVideosCount(String uid) throws IOException {
+	private int getUpVideosCount(String uid) throws IOException, JSONException {
 		int count;
 		String first = getDataFromServer(
 				"https://api.bilibili.com/x/space/arc/search?mid=" + uid + "&pn=1&ps=1&jsonp=jsonp");
@@ -384,19 +460,19 @@ public class Spider implements Runnable {
 		return new JSONObject(text).getJSONObject("data");
 	}
 
-	private String getVideoTitle(JSONObject json) {
+	private String getVideoTitle(JSONObject json) throws JSONException {
 		return json.getString("title");
 	}
 
-	private String getPageName(JSONObject json, int page) {
+	private String getPageName(JSONObject json, int page) throws JSONException {
 		return json.getJSONArray("pages").getJSONObject(page).getString("part");
 	}
 
-	private String getUpName(JSONObject json) {
+	private String getUpName(JSONObject json) throws JSONException {
 		return json.getJSONObject("owner").getString("name");
 	}
 
-	private String[] getVideoPages(JSONObject json) throws IOException {
+	private String[] getVideoPages(JSONObject json) throws IOException, JSONException {
 		ArrayList<String> str = new ArrayList<>();
 		JSONArray pages = json.getJSONArray("pages");
 		for (int i = 0; i < pages.length(); i++) {
@@ -407,9 +483,8 @@ public class Spider implements Runnable {
 
 	private void randomSleep() {
 		try {
-			Thread.sleep(2000 + (int) Math.random() * 2000);
+			Thread.sleep(1000 + (int) (Math.random() * 1000));
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 		}
 	}
 
@@ -434,7 +509,7 @@ public class Spider implements Runnable {
 		public String sex;// 性别
 		public URL face_url;// 头像的url
 		public String sign;// 介绍
-		public int role;// 认证信息，0为无认证，1为黄色闪电，2为蓝色闪电
+		public int role;// 认证信息，0为无认证，1或2为黄色闪电，3及以上为蓝色闪电
 		public int videos;// UP主的视频数
 	}
 
