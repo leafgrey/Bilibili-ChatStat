@@ -5,8 +5,8 @@ package script;
  */
 public class Config {
 
-	// 是否允许修改配置
-	public static boolean ALLOW_MODIFY = true;
+	public static String VERSION = "1.2.0";// 版本
+	public static boolean ALLOW_MODIFY = true;// 是否允许修改配置
 
 	// 高级弹幕合并，格式为{"正则表达式","替换文字"}，如{"^OH{2,}$","OHHHH"}；也可以在“替换文字”后添加注释。
 	// 这是预设的规则库，使用者可以自定义。
@@ -16,6 +16,11 @@ public class Config {
 			{ ".*啊我是驴.*", "awsl" }, { ".*啊我酸了.*", "awsl" }, { ".*啊我生了.*", "awsl" }, { ".*爱我苏联.*", "awsl" },
 			{ ".*啊我睡了.*", "awsl" }, { ".*阿伟是鹿.*", "awsl" }, { ".*阿伟是驴.*", "awsl" }, { ".*阿伟酸了.*", "awsl" },
 			{ ".*阿伟生了.*", "awsl" }, { ".*爱我苏联.*", "awsl" } };
+
+	public static String CHAT_TAG_IGNORE = "<@ignore>";// 忽略弹幕的标记
+	public static String CHAT_TAG_ONLY = "<@only>";// 只统计含该标记的弹幕
+	public static String[] IGNORE_CHAT_SET = new String[0];// 该数组中的正则匹配规则将用于去掉弹幕
+	public static String[] ONLY_CHAT_SET = new String[0];// 该数组中的正则匹配规则将用于将弹幕加入特殊统计池，只统计该统计池的弹幕
 
 	// 公共配置
 	public static class public_config {

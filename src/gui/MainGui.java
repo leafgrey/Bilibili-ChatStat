@@ -152,7 +152,7 @@ public class MainGui implements Runnable {
 		frame = new JFrame();
 		frame.setIconImage(icon.getImage());
 		fileManager = new FileManager();
-		frame.setTitle("ChatStat - 哔哩哔哩弹幕统计工具 1.1.0 by JellyBlack");
+		frame.setTitle("ChatStat - 哔哩哔哩弹幕统计工具 " + Config.VERSION + " by JellyBlack");
 		frame.setBounds(100, 100, 900, 650);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -165,7 +165,8 @@ public class MainGui implements Runnable {
 
 		JTextArea textArea = new JTextArea();
 		textArea.setBackground(new Color(240, 240, 240));
-		textArea.setText(" 欢迎使用 ChatStat 1.1.0！\n 使用教程请前往源码仓库：https://github.com/JellyBlack/Bilibili-ChatStat");
+		textArea.setText(
+				" 欢迎使用 ChatStat " + Config.VERSION + "！\n 使用教程请前往源码仓库：https://github.com/JellyBlack/Bilibili-ChatStat");
 		textArea.setEditable(false);
 		textArea.setLineWrap(true);
 		north_panel.add(textArea, BorderLayout.NORTH);
@@ -696,7 +697,24 @@ public class MainGui implements Runnable {
 			if (file.exists()) {
 				CsvReader csvReader = new CsvReader(file);
 				String[][] set = csvReader.getStringArray();
-				Config.ADVANCED_MATCH_SET = set;
+				ArrayList<String> ignore_chats = new ArrayList<>();
+				ArrayList<String> only_chats = new ArrayList<>();
+				ArrayList<String[]> set2 = new ArrayList<>();
+				// 读取特殊标记
+				for (int i = 0; i < set.length; i++) {
+					if (set[i][1].replace(" ", "").toLowerCase().equals(Config.CHAT_TAG_IGNORE)) {
+						ignore_chats.add(set[i][0]);
+						continue;
+					}
+					if (set[i][1].replace(" ", "").toLowerCase().equals(Config.CHAT_TAG_ONLY)) {
+						only_chats.add(set[i][0]);
+						continue;
+					}
+					set2.add(set[i]);
+				}
+				Config.ADVANCED_MATCH_SET = set2.toArray(new String[0][]);
+				Config.IGNORE_CHAT_SET = ignore_chats.toArray(new String[0]);
+				Config.ONLY_CHAT_SET = only_chats.toArray(new String[0]);
 				status = 1;
 
 			} else {
@@ -727,7 +745,20 @@ public class MainGui implements Runnable {
 			status = 2;
 		}
 		jsonThread.start();
-		table = new JTable(Config.ADVANCED_MATCH_SET, new String[] { "正则表达式", "替换字符串" });
+		String[][] set = new String[Config.ADVANCED_MATCH_SET.length + Config.IGNORE_CHAT_SET.length
+				+ Config.ONLY_CHAT_SET.length][2];
+		for (int i = 0; i < Config.ADVANCED_MATCH_SET.length; i++) {
+			set[i] = Config.ADVANCED_MATCH_SET[i];
+		}
+		for (int i = 0; i < Config.IGNORE_CHAT_SET.length; i++) {
+			set[Config.ADVANCED_MATCH_SET.length + i] = new String[] { Config.IGNORE_CHAT_SET[i],
+					"<html><strong>&lt;@ignore&gt;&nbsp;&nbsp;&nbsp;&nbsp;（识别到特殊标签）</strong>" };
+		}
+		for (int i = 0; i < Config.ONLY_CHAT_SET.length; i++) {
+			set[Config.ADVANCED_MATCH_SET.length + Config.IGNORE_CHAT_SET.length + i] = new String[] {
+					Config.ONLY_CHAT_SET[i], "<html><strong>&lt;@only&gt;&nbsp;&nbsp;&nbsp;&nbsp;（识别到特殊标签）</strong>" };
+		}
+		table = new JTable(set, new String[] { "正则表达式", "替换字符串" });
 		table.setEnabled(false);
 		table.getTableHeader().setReorderingAllowed(false);
 		scroll_set = new JScrollPane(table);

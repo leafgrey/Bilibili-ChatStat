@@ -206,9 +206,45 @@ public class Chat {
 					text = chats.get(j);
 				}
 				chats.set(j, text.replaceAll(set[i][0], set[i][1]));
-
 			}
 		}
+		ArrayList<String> chats_temp = new ArrayList<>();
+		ArrayList<String> users_temp = new ArrayList<>();
+		ArrayList<Float> time_temp = new ArrayList<>();
+		ArrayList<Long> date_temp = new ArrayList<>();
+		for (int i = 0; i < chats.size(); i++) {
+			boolean b = true;
+			if(Config.ONLY_CHAT_SET.length != 0) {
+				b = false;
+				for(int j = 0; j < Config.ONLY_CHAT_SET.length; j ++) {
+					if(chats.get(i).matches(Config.ONLY_CHAT_SET[j])) {
+						b = true;
+					}
+				}
+				if(b) {
+					chats_temp.add(chats.get(i));
+					users_temp.add(users.get(i));
+					time_temp.add(time.get(i));
+					date_temp.add(date.get(i));
+				}
+				continue;
+			}
+			for(int j = 0; j < Config.IGNORE_CHAT_SET.length; j ++) {
+				if(chats.get(i).matches(Config.IGNORE_CHAT_SET[j])) {
+					b = false;
+				}
+			}
+			if(b) {
+				chats_temp.add(chats.get(i));
+				users_temp.add(users.get(i));
+				time_temp.add(time.get(i));
+				date_temp.add(date.get(i));
+			}
+		}
+		chats = chats_temp;
+		users = users_temp;
+		time = time_temp;
+		date = date_temp;
 	}
 
 	/**

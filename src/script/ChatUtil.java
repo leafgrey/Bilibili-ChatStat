@@ -28,7 +28,7 @@ public class ChatUtil {
 			MainGui.getInstance().progressFinish();
 		}
 		if (Config.public_config.ADVANCED_MATCH) {
-			MainGui.getInstance().initProgressBar(Config.ADVANCED_MATCH_SET.length);
+			MainGui.getInstance().initProgressBar(Config.ADVANCED_MATCH_SET.length + Config.IGNORE_CHAT_SET.length + Config.ONLY_CHAT_SET.length);
 			chat.advanced_match(Config.public_config.IGNORE_CASES, Config.ADVANCED_MATCH_SET);
 			MainGui.getInstance().progressFinish();
 		}
