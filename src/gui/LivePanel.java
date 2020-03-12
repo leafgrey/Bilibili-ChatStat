@@ -118,7 +118,22 @@ public class LivePanel extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Config.live_config.DELAY = Integer.parseInt(field_delay.getText());
+				try {
+					int delay = Integer.parseInt(field_delay.getText());
+					if (delay < 0) {
+						log("【警告】间隔设置失败，请检查输入");
+						return;
+					}
+					Config.live_config.DELAY = delay;
+					if (thread != null) {
+						thread.interrupt();
+					}
+				} catch (NumberFormatException err) {
+					log("【警告】间隔设置失败，请检查输入");
+				} finally {
+					field_delay.setText(Config.live_config.DELAY + "");
+					refreshUi();
+				}
 			}
 		});
 		panel_delay.add(button_delay);
@@ -148,6 +163,7 @@ public class LivePanel extends JPanel {
 					OutputManager.saveToJson(LiveChat.getJSONArray());
 					new Dialog("输出成功", "已输出到json文件。").setVisible(true);
 					;
+					thread = null;
 					reset();
 					button_choose.setEnabled(true);
 					button_status.setEnabled(true);
@@ -206,9 +222,12 @@ public class LivePanel extends JPanel {
 					Config.live_config.STATUS = false;
 					thread.interrupt();
 					button_status.setText("正在输出");
-					OutputManager.saveToXml(LiveChat.getChat());
-					new Dialog("输出成功", "已输出到xml文件。\n【注意】导出的xml文件仅供ChatStat统计使用，并不是真正的哔哩哔哩xml弹幕文件。").setVisible(true);
+					OutputManager.saveToXml(LiveChat.getChat(), LiveChat.getChatColor());
+					new Dialog("输出成功",
+							"已输出到xml文件。\n导出的xml文件可供ChatStat统计使用，并不是真正的哔哩哔哩xml弹幕文件。\n1.2.0版本之后，您可以使用第三方xml弹幕转字幕工具转换输出的xml文件，并且保证弹幕颜色显示正常。")
+									.setVisible(true);
 					;
+					thread = null;
 					reset();
 					button_choose.setEnabled(true);
 					button_status.setEnabled(true);

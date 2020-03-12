@@ -160,19 +160,21 @@ public class OutputManager {
 	/**
 	 * 保存到xml文件
 	 * 
-	 * @param chat 弹幕实体类对象
+	 * @param chat  弹幕实体类对象
+	 * @param color 颜色数组
 	 */
-	public static void saveToXml(Chat chat) {
-		saveToXml(chat, file.getPath() + ".xml");
+	public static void saveToXml(Chat chat, int[] color) {
+		saveToXml(chat, color, file.getPath() + ".xml");
 	}
 
 	/**
 	 * 保存到xml文件
 	 * 
 	 * @param chat     弹幕实体类对象
+	 * @param color    颜色数组
 	 * @param filePath 指定文件路径
 	 */
-	public static void saveToXml(Chat chat, String filePath) {
+	public static void saveToXml(Chat chat, int[] color, String filePath) {
 		try {
 			file = new File(filePath);
 			file.mkdirs();
@@ -190,7 +192,9 @@ public class OutputManager {
 					writer.write("0");
 				}
 				writer.write(df.format(chat.getTime().get(i)));
-				writer.write(",1,25,0,");
+				writer.write(",1,25,");
+				writer.write(color[i] + "");
+				writer.write(",");
 				writer.write(chat.getDate().get(i).toString());
 				writer.write(",0,");
 				writer.write(chat.getUsers().get(i));
