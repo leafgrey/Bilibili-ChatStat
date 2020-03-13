@@ -79,6 +79,7 @@ public class LiveChat implements Runnable {
 		LivePanel.getInstance().refreshUi();
 		while (Config.live_config.STATUS) {
 			JSONObject jsonObject = null;
+			String[] ct_temp = null;
 			int buffer = 0;
 			int new_chat_count = 0;
 			try {
@@ -98,11 +99,15 @@ public class LiveChat implements Runnable {
 				JSONObject check_info = chat_json.getJSONObject("check_info");
 				String ct = check_info.getString("ct");
 				String text = chat_json.getString("text");
+				if (i == 0) {
+					ct_temp = new String[room.length()];
+				}
 				if (prepared) {
 					for (int j = 0; j < ct_old.length; j++) {
 						// 判断弹幕是否相等
 						if (ct.equals(ct_old[j])) {
 							buffer++;
+							ct_temp[i] = ct;
 							continue tick;
 						}
 					}
@@ -110,16 +115,16 @@ public class LiveChat implements Runnable {
 				if (i == 0) {
 					ct_old = new String[room.length()];
 				}
-				ct_old[i] = ct;
+				ct_temp[i] = ct;
 				Long time = check_info.getLong("ts");
 				// 如果弹幕的发送时间早于设定的开始时间，则该弹幕是历史弹幕，不抓取
-				if (time < Config.live_config.START_TIME) {
+				if (time * 1000 < Config.live_config.START_TIME) {
 					LivePanel.getInstance().log("[历史弹幕，不记录]  " + text);
 					continue tick;
 				}
 				new_chat_count++;
 				String text2 = text.replace("<", "&lt;").replace("&", "&amp;");
-				// 字体颜色
+				// 字体颜色，弹幕转换工具Github上一搜一大堆
 				// 暂时只支持这几种，因为开发者翻遍F12也找不到控制弹幕颜色的字段在哪里（泪）
 				// 优先级：船员 > 年费老爷 > 月费老爷 > 普通
 				color_block: {
@@ -128,7 +133,7 @@ public class LiveChat implements Runnable {
 						break color_block;
 					}
 					if (chat_json.getInt("svip") == 1) {
-						color.add(0x66ccff);// 蓝色（天依色哦）
+						color.add(0x66ccff);// 蓝色（天依色哦，刻在DNA里的RGB号）
 						break color_block;
 					}
 					if (chat_json.getInt("vip") == 1) {
@@ -137,8 +142,8 @@ public class LiveChat implements Runnable {
 					}
 					color.add(0xffffff);// 白色
 				}
-				chat.append(text2, chat_json.getInt("uid") + "",
-						(float) ((time - Config.live_config.START_TIME) / 1000), time / 1000);
+				chat.append(text2, chat_json.getInt("uid") + "", (float) (time - Config.live_config.START_TIME / 1000),
+						time);
 				total_json.put(chat_json);
 				if (first_run) {
 					LivePanel.getInstance().log("[缓冲区填充中]  " + text);
@@ -147,6 +152,9 @@ public class LiveChat implements Runnable {
 				} else {
 					LivePanel.getInstance().log("[缓冲区" + buffer + "]  " + text);
 				}
+			}
+			for (int i = 0; i < room.length(); i++) {
+				ct_old[i] = ct_temp[i];
 			}
 			if (!first_run && buffer == 0) {
 				if (Config.live_config.AUTO_DELAY && !first_run) {
