@@ -26,14 +26,16 @@ public class LiveChat implements Runnable {
 	private static JSONArray total_json;
 	private static String stringBuff = "";
 	private static ArrayList<Integer> color = null;
+	private boolean liveRoomHandled;
 
 	/**
 	 * 实例化
 	 * 
 	 * @param file 输出的文件
 	 */
-	public LiveChat(File file) {
+	public LiveChat(File file, boolean liveRoomHandled) {
 		this.file = file;
+		this.liveRoomHandled = liveRoomHandled;
 	}
 
 	/**
@@ -53,30 +55,15 @@ public class LiveChat implements Runnable {
 		for (int i = 0; i < stat.length; i++) {
 			stat[i] = 0;
 		}
-		LivePanel.getInstance().log("###  正在处理房间号  ###");
-		LivePanel.getInstance().refreshUi();
-		try {
-			String json = getDataFromServer(
-					"https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid=" + Config.live_config.ROOM);
-			String room = new JSONObject(json).getJSONObject("data").getString("roomid");
-			Config.live_config.ROOM = Integer.parseInt(room);
-		} catch (IOException | JSONException | NumberFormatException e) {
-			try {
-				String json = getDataFromServer(
-						"https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid=" + Config.live_config.ROOM);
-				int room = new JSONObject(json).getJSONObject("data").getInt("roomid");
-				Config.live_config.ROOM = room;
-			} catch (IOException | JSONException | NumberFormatException err) {
-				LivePanel.getInstance().log("###############");
-				LivePanel.getInstance().log(e.getMessage());
-				LivePanel.getInstance().log("【发生异常】" + err.getClass().getName());
-				LivePanel.getInstance().log("###############");
-				LivePanel.getInstance().refreshUi();
+		if (!liveRoomHandled) {
+			LivePanel.getInstance().log("###  正在处理房间号  ###");
+			LivePanel.getInstance().refreshUi();
+			if (!utilRoomNumber()) {
 				return;
 			}
+			LivePanel.getInstance().log("###  处理完毕，抓取已开始  ###");
+			LivePanel.getInstance().refreshUi();
 		}
-		LivePanel.getInstance().log("###  处理完毕，抓取已开始  ###");
-		LivePanel.getInstance().refreshUi();
 		while (Config.live_config.STATUS) {
 			JSONObject jsonObject = null;
 			String[] ct_temp = null;
@@ -262,6 +249,7 @@ public class LiveChat implements Runnable {
 				sb.append((char) c);
 			}
 			stringBuff = sb.toString();
+			conn.disconnect();
 			return sb.toString();
 		} catch (SocketTimeoutException e) {
 			LivePanel.getInstance().log("【警告】HTTP连接超时");
@@ -277,7 +265,7 @@ public class LiveChat implements Runnable {
 	 * @return 字符串
 	 * @throws IOException IO异常
 	 */
-	private String getDataFromServer(String url_) throws IOException {
+	private static String getDataFromServer(String url_) throws IOException {
 		URL url = new URL(url_);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod("GET");
@@ -289,6 +277,7 @@ public class LiveChat implements Runnable {
 		for (int c; (c = in.read()) >= 0;) {
 			sb.append((char) c);
 		}
+		conn.disconnect();
 		return sb.toString();
 	}
 
@@ -321,5 +310,29 @@ public class LiveChat implements Runnable {
 	 */
 	public static JSONArray getJSONArray() {
 		return total_json;
+	}
+
+	public static boolean utilRoomNumber() {
+		try {
+			String json = getDataFromServer(
+					"https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid=" + Config.live_config.ROOM);
+			String room = new JSONObject(json).getJSONObject("data").getString("roomid");
+			Config.live_config.ROOM = Integer.parseInt(room);
+		} catch (IOException | JSONException | NumberFormatException e) {
+			try {
+				String json = getDataFromServer(
+						"https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid=" + Config.live_config.ROOM);
+				int room = new JSONObject(json).getJSONObject("data").getInt("roomid");
+				Config.live_config.ROOM = room;
+			} catch (IOException | JSONException | NumberFormatException err) {
+				LivePanel.getInstance().log("###############");
+				LivePanel.getInstance().log(e.getMessage());
+				LivePanel.getInstance().log("【发生异常】" + err.getClass().getName());
+				LivePanel.getInstance().log("###############");
+				LivePanel.getInstance().refreshUi();
+				return false;
+			}
+		}
+		return true;
 	}
 }

@@ -426,6 +426,7 @@ public class Spider implements Runnable {
 		for (int c; (c = in.read()) >= 0;) {
 			sb.append((char) c);
 		}
+		conn.disconnect();
 		return sb.toString();
 	}
 

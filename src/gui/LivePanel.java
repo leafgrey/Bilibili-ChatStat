@@ -13,6 +13,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
@@ -22,6 +23,7 @@ import javax.swing.event.ChangeListener;
 
 import script.Config;
 import script.LiveChat;
+import script.LiveRoomStatus;
 import script.OutputManager;
 
 /**
@@ -45,6 +47,9 @@ public class LivePanel extends JPanel {
 	private ArrayList<String> logs;
 	private Thread thread;
 	private boolean long_clicked = false;
+	private JCheckBox checkbox;
+	private Thread auto = null;
+	private boolean auto_stopped = false;
 
 	/**
 	 * 创建控件
@@ -225,17 +230,40 @@ public class LivePanel extends JPanel {
 						refreshUi();
 					}
 				} else {
-					button_choose.setText("等待抓取结束");
-					button_choose.setEnabled(false);
-					button_status.setEnabled(false);
+					if (Config.live_config.AUTO_STOP) {
+						Config.live_config.AUTO_STOP = false;
+						auto.interrupt();
+						try {
+							auto.join();
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+						log("###  您已手动停止爬虫  ###");
+						refreshUi();
+					}
 					Config.live_config.STATUS = false;
-					thread.interrupt();
+					if (!auto_stopped) {
+						button_status.setText("等待抓取结束");
+						button_choose.setEnabled(false);
+						button_status.setEnabled(false);
+						thread.interrupt();
+						try {
+							thread.join();
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+					}
+					Config.live_config.STATUS = false;
+					auto_stopped = false;
 					button_choose.setText("正在输出");
 					OutputManager.saveToJson(LiveChat.getJSONArray());
 					new Dialog("输出成功", "已输出到json文件。").setVisible(true);
 					;
 					thread = null;
 					reset();
+					checkbox.setText("当主播开播时自动启动爬虫");
+					checkbox.setEnabled(true);
+					checkbox.setSelected(false);
 					button_choose.setEnabled(true);
 					button_status.setEnabled(true);
 					button_choose.setText("选择输出目录");
@@ -248,6 +276,8 @@ public class LivePanel extends JPanel {
 					field_room.setEnabled(true);
 					Config.ALLOW_MODIFY = true;
 					OutputManager.setFile(null);
+					log("###  输出文件完毕  ###");
+					refreshUi();
 				}
 			}
 		});
@@ -258,40 +288,78 @@ public class LivePanel extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (!Config.live_config.STATUS) {
-					if (OutputManager.getFile() == null) {
-						new Dialog("配置不完整", "请先选择输出目录。").setVisible(true);
-						return;
+					if (!Config.live_config.AUTO_START) {
+						if (OutputManager.getFile() == null) {
+							new Dialog("配置不完整", "请先选择输出目录。").setVisible(true);
+							return;
+						}
+						if (field_room.getText().isEmpty()) {
+							new Dialog("配置不完整", "请输入直播间。").setVisible(true);
+							return;
+						}
+						try {
+							Config.live_config.ROOM = Integer.parseInt(field_room.getText());
+						} catch (NumberFormatException err) {
+							new Dialog("直播间配置错误", "无法读取房间号。请检查直播间房间号。").setVisible(true);
+							return;
+						}
+						if (Config.live_config.ROOM <= 0) {
+							new Dialog("直播间配置错误", "直播间房间号必须是大于0的整数。").setVisible(true);
+							return;
+						}
 					}
-					if (field_room.getText().isEmpty()) {
-						new Dialog("配置不完整", "请输入直播间。").setVisible(true);
-						return;
-					}
-					try {
-						Config.live_config.ROOM = Integer.parseInt(field_room.getText());
-					} catch (NumberFormatException err) {
-						new Dialog("直播间配置错误", "无法读取房间号。请检查直播间房间号。").setVisible(true);
-						return;
-					}
-					if (Config.live_config.ROOM <= 0) {
-						new Dialog("直播间配置错误", "直播间房间号必须是大于0的整数。").setVisible(true);
-						return;
+					boolean b = false;
+					if (Config.live_config.AUTO_START) {
+						button_choose.setEnabled(true);
+						Config.live_config.AUTO_START = false;
+						auto.interrupt();
+						try {
+							auto.join();
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+						log("###  您已手动启动爬虫  ###");
+						b = true;
+						refreshUi();
 					}
 					Config.live_config.START_TIME = new Date().getTime();
 					Config.live_config.STATUS = true;
+					checkbox.setText("当主播关播时自动停止爬虫");
+					checkbox.setSelected(false);
 					setEnabled(false);
 					Config.ALLOW_MODIFY = false;
 					MainGui.getInstance().setEnabled(false);
 					Config.ALLOW_MODIFY = true;
 					button_choose.setText("结束并输出为json");
 					button_status.setText("结束并模拟输出xml");
-					thread = new Thread(new LiveChat(OutputManager.getFile()));
+					thread = new Thread(new LiveChat(OutputManager.getFile(), b));
 					thread.start();
 				} else {
-					button_status.setText("等待抓取结束");
-					button_choose.setEnabled(false);
-					button_status.setEnabled(false);
+					if (Config.live_config.AUTO_STOP) {
+						Config.live_config.AUTO_STOP = false;
+						auto.interrupt();
+						try {
+							auto.join();
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+						log("###  您已手动停止爬虫  ###");
+						refreshUi();
+					}
 					Config.live_config.STATUS = false;
-					thread.interrupt();
+					if (!auto_stopped) {
+						button_status.setText("等待抓取结束");
+						button_choose.setEnabled(false);
+						button_status.setEnabled(false);
+						thread.interrupt();
+						try {
+							thread.join();
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+					}
+					Config.live_config.STATUS = false;
+					auto_stopped = false;
 					button_status.setText("正在输出");
 					OutputManager.saveToXml(LiveChat.getChat(), LiveChat.getChatColor());
 					new Dialog("输出成功",
@@ -300,6 +368,9 @@ public class LivePanel extends JPanel {
 					;
 					thread = null;
 					reset();
+					checkbox.setText("当主播开播时自动启动爬虫");
+					checkbox.setEnabled(true);
+					checkbox.setSelected(false);
 					button_choose.setEnabled(true);
 					button_status.setEnabled(true);
 					button_choose.setText("选择输出目录");
@@ -312,10 +383,100 @@ public class LivePanel extends JPanel {
 					field_room.setEnabled(true);
 					Config.ALLOW_MODIFY = true;
 					OutputManager.setFile(null);
+					log("###  输出文件完毕  ###");
+					refreshUi();
 				}
 			}
 		});
 		panel_control.add(button_status);
+
+		checkbox = new JCheckBox("当主播开播时自动启动爬虫");
+		checkbox.setSelected(false);
+		checkbox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (!Config.live_config.STATUS && !Config.live_config.AUTO_START) {
+					int result = JOptionPane.showConfirmDialog(null,
+							"该功能可以帮助你精准地控制爬虫开始运行的时间。\n勾选该选项后，程序将不间断地向服务器请求直播间状态，一旦开播将立即启动爬虫。\n勾选后您也可以手动启动爬虫。\n为避免向服务器请求过多数据，建议在开播前一两分钟时启动此选项。\n（你屏幕跃动的日志，是我此生不灭的信仰，唯我封号斗罗永世长存）\n你确认要开启吗？",
+							"当主播开播时自动启动爬虫", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+					if (result == JOptionPane.YES_OPTION) {
+						if (OutputManager.getFile() == null) {
+							new Dialog("配置不完整", "请先选择输出目录。").setVisible(true);
+							checkbox.setSelected(false);
+							return;
+						}
+						if (field_room.getText().isEmpty()) {
+							new Dialog("配置不完整", "请输入直播间。").setVisible(true);
+							checkbox.setSelected(false);
+							return;
+						}
+						try {
+							Config.live_config.ROOM = Integer.parseInt(field_room.getText());
+						} catch (NumberFormatException err) {
+							new Dialog("直播间配置错误", "无法读取房间号。请检查直播间房间号。").setVisible(true);
+							checkbox.setSelected(false);
+							return;
+						}
+						if (Config.live_config.ROOM <= 0) {
+							new Dialog("直播间配置错误", "直播间房间号必须是大于0的整数。").setVisible(true);
+							checkbox.setSelected(false);
+							return;
+						}
+						setEnabled(false);
+						button_choose.setEnabled(false);
+						Config.ALLOW_MODIFY = false;
+						MainGui.getInstance().setEnabled(false);
+						Config.ALLOW_MODIFY = true;
+						Config.live_config.AUTO_START = true;
+						auto = new Thread(new LiveRoomStatus(1));
+						auto.start();
+					} else {
+						checkbox.setSelected(false);
+					}
+				} else if (!Config.live_config.STATUS && Config.live_config.AUTO_START) {
+					if (auto != null) {
+						auto.interrupt();
+						try {
+							auto.join();
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+						log("###  已停止自动启动  ###");
+						refreshUi();
+						setEnabled(true);
+						button_choose.setEnabled(true);
+						Config.ALLOW_MODIFY = false;
+						MainGui.getInstance().setEnabled(true);
+						Config.ALLOW_MODIFY = true;
+						Config.live_config.AUTO_START = false;
+					}
+				} else if (Config.live_config.STATUS && !Config.live_config.AUTO_STOP) {
+					int result = JOptionPane.showConfirmDialog(null,
+							"该功能可以帮助你精准地控制爬虫停止运行的时间。\n勾选该选项后，程序将不间断地向服务器请求直播间状态，一旦停播将立即停止爬虫。\n停止后不会自动输出到文件，需手动操作；停止后不能继续爬取。\n勾选后您也可以手动停止爬虫。\n如果你正在爬取的直播间正处于关播或轮播状态，那么勾选后爬虫立即停止。\n为避免向服务器请求过多数据，建议在关播前一两分钟时启动此选项。\n如果主播是临时下播，不要勾选此选项，否则爬虫将在中途停止。\n（你屏幕跃动的日志，是我此生不灭的信仰，唯我封号斗罗永世长存）\n你确认要开启吗？",
+							"当主播关播时自动停止爬虫", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+					if (result == JOptionPane.YES_OPTION) {
+						Config.live_config.AUTO_STOP = true;
+						auto = new Thread(new LiveRoomStatus(0));
+						auto.start();
+					} else {
+						checkbox.setSelected(false);
+					}
+				} else if (Config.live_config.STATUS && Config.live_config.AUTO_STOP) {
+					if (auto != null) {
+						auto.interrupt();
+						try {
+							auto.join();
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+						log("###  已停止自动停止  ###");
+						refreshUi();
+						Config.live_config.AUTO_STOP = false;
+					}
+				}
+			}
+		});
+		panel_right.add(checkbox);
 
 	}
 
@@ -406,4 +567,36 @@ public class LivePanel extends JPanel {
 		field_delay.setText(Config.live_config.DELAY + "");
 	}
 
+	public void onLiveStart() {
+		Config.live_config.START_TIME = new Date().getTime();
+		Config.live_config.STATUS = true;
+		setEnabled(false);
+		button_choose.setEnabled(true);
+		Config.ALLOW_MODIFY = false;
+		MainGui.getInstance().setEnabled(false);
+		Config.ALLOW_MODIFY = true;
+		button_choose.setText("结束并输出为json");
+		button_status.setText("结束并模拟输出xml");
+		checkbox.setText("当主播关播时自动停止爬虫");
+		checkbox.setSelected(false);
+		Config.live_config.AUTO_START = false;
+		thread = new Thread(new LiveChat(OutputManager.getFile(), true));
+		thread.start();
+	}
+
+	public void onLiveStop() {
+		Config.live_config.STATUS = false;
+		checkbox.setText("本次爬取完成，请输出到文件");
+		checkbox.setEnabled(false);
+		checkbox.setSelected(false);
+		Config.live_config.AUTO_STOP = false;
+		auto_stopped = true;
+		thread.interrupt();
+		try {
+			thread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		Config.live_config.STATUS = true;// 为保证输出文件时代码块执行正确，这里临时修改状态
+	}
 }

@@ -14,6 +14,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -451,7 +455,7 @@ public class MainGui implements Runnable {
 
 		panel_add_files = new JPanel();
 		FlowLayout flowLayout = (FlowLayout) panel_add_files.getLayout();
-		flowLayout.setVgap(35);
+		flowLayout.setVgap(45);
 		control_panel.add(panel_add_files);
 
 		button_add_files = new JButton("添加xml文件");
@@ -469,7 +473,7 @@ public class MainGui implements Runnable {
 
 		panel_delete_files = new JPanel();
 		FlowLayout flowLayout_1 = (FlowLayout) panel_delete_files.getLayout();
-		flowLayout_1.setVgap(35);
+		flowLayout_1.setVgap(45);
 		control_panel.add(panel_delete_files);
 
 		button_delete_files = new JButton("删除选中的xml文件");

@@ -46,6 +46,8 @@ public class Config {
 		public static int DELAY = 1000;// 两次爬取弹幕的延时
 		public static boolean STATUS = false;// 是否正在执行
 		public static boolean AUTO_DELAY = true;// 自动调整延时
+		public static boolean AUTO_START = false;// 自动启动爬虫
+		public static boolean AUTO_STOP = false;// 自动停止爬虫
 		public static long START_TIME = 0;// 开始爬取的时间戳
 	}
 
