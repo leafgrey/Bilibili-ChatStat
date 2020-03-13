@@ -4,10 +4,13 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Date;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -20,7 +23,6 @@ import javax.swing.event.ChangeListener;
 import script.Config;
 import script.LiveChat;
 import script.OutputManager;
-import javax.swing.JCheckBox;
 
 /**
  * 直播弹幕爬取的控件类
@@ -42,6 +44,7 @@ public class LivePanel extends JPanel {
 	private static LivePanel instance;
 	private ArrayList<String> logs;
 	private Thread thread;
+	private boolean long_clicked = false;
 
 	/**
 	 * 创建控件
@@ -118,13 +121,19 @@ public class LivePanel extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				if (long_clicked) {
+					return;
+				}
 				try {
 					int delay = Integer.parseInt(field_delay.getText());
 					if (delay < 0) {
 						log("【警告】间隔设置失败，请检查输入");
 						return;
 					}
-					Config.live_config.DELAY = delay;
+					if (Config.live_config.DELAY != delay) {
+						Config.live_config.DELAY = delay;
+						log("间隔已设置为" + delay + "ms");
+					}
 					if (thread != null) {
 						thread.interrupt();
 					}
@@ -134,6 +143,68 @@ public class LivePanel extends JPanel {
 					field_delay.setText(Config.live_config.DELAY + "");
 					refreshUi();
 				}
+			}
+		});
+		button_delay.addMouseListener(new MouseAdapter() {
+			boolean auto_delay = false;
+			int delay = 0;
+			boolean thread_started = false;
+			boolean successful = false;
+			Thread thread2;
+			Runnable runnable = new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						return;
+					}
+					long_clicked = true;
+					if (!Config.live_config.STATUS) {
+						log("您未启动爬取，不能开始临时零间隔模式");
+						refreshUi();
+						return;
+					}
+					successful = true;
+					log("###  临时零间隔模式已启动  ###");
+					refreshUi();
+					field_delay.setText("0");
+					Config.live_config.DELAY = 0;
+					Config.live_config.AUTO_DELAY = false;
+					thread.interrupt();
+				}
+			};
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (!thread_started) {
+					thread2 = new Thread(runnable);
+					thread2.start();
+					auto_delay = Config.live_config.AUTO_DELAY;
+					delay = Config.live_config.DELAY;
+					thread_started = true;
+				}
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				thread2.interrupt();
+				try {
+					thread2.join();
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				thread_started = false;
+				long_clicked = false;
+				if (!successful) {
+					return;
+				}
+				successful = false;
+				Config.live_config.DELAY = delay;
+				Config.live_config.AUTO_DELAY = auto_delay;
+				field_delay.setText(delay + "");
+				log("###  临时零间隔模式已停止  ###");
+				refreshUi();
 			}
 		});
 		panel_delay.add(button_delay);

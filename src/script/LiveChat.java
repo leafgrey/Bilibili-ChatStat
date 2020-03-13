@@ -8,8 +8,6 @@ import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 import org.json.JSONArray;
@@ -46,9 +44,10 @@ public class LiveChat implements Runnable {
 		chat = new Chat(new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Float>(),
 				new ArrayList<Long>());
 		color = new ArrayList<>();
-		JSONArray jsonArray_old = new JSONArray();
+		String[] ct_old = null;
 		total_json = new JSONArray();
 		boolean first_run = true;
+		boolean prepared = false;
 		int[] stat = new int[10];
 		int stat_index = 0;
 		for (int i = 0; i < stat.length; i++) {
@@ -95,55 +94,58 @@ public class LiveChat implements Runnable {
 			JSONArray room = data.getJSONArray("room");
 			LivePanel.getInstance().addTime();
 			tick: for (int i = 0; i < room.length(); i++) {
-				for (int j = 0; j < jsonArray_old.length(); j++) {
-					if ((room.getJSONObject(i).toString()).equals(jsonArray_old.getJSONObject(j).toString())) {
-						buffer++;
-						continue tick;
+				JSONObject chat_json = room.getJSONObject(i);
+				JSONObject check_info = chat_json.getJSONObject("check_info");
+				String ct = check_info.getString("ct");
+				String text = chat_json.getString("text");
+				if (prepared) {
+					for (int j = 0; j < ct_old.length; j++) {
+						// 判断弹幕是否相等
+						if (ct.equals(ct_old[j])) {
+							buffer++;
+							continue tick;
+						}
 					}
 				}
-				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-				long time = 0;
-				try {
-					time = (format.parse(room.getJSONObject(i).getString("timeline"))).getTime();
-				} catch (JSONException | ParseException e) {
-					LivePanel.getInstance().log("###############");
-					LivePanel.getInstance().log(e.getMessage());
-					LivePanel.getInstance().log("【发生异常】" + e.getClass().getName());
-					LivePanel.getInstance().log("###############");
-					LivePanel.getInstance().refreshUi();
+				if (i == 0) {
+					ct_old = new String[room.length()];
 				}
+				ct_old[i] = ct;
+				Long time = check_info.getLong("ts");
 				// 如果弹幕的发送时间早于设定的开始时间，则该弹幕是历史弹幕，不抓取
 				if (time < Config.live_config.START_TIME) {
-					LivePanel.getInstance().log("[历史弹幕，不记录]  " + (room.getJSONObject(i).getString("text")));
+					LivePanel.getInstance().log("[历史弹幕，不记录]  " + text);
 					continue tick;
 				}
 				new_chat_count++;
-				String text = room.getJSONObject(i).getString("text");
-				text = text.replace("<", "&lt;");
-				text = text.replace("&", "&amp;");
+				String text2 = text.replace("<", "&lt;").replace("&", "&amp;");
 				// 字体颜色
-				String text_color = room.getJSONObject(i).getString("uname_color").replace("#", "");
-				if (text_color.isEmpty()) {
-					color.add(16777215);
-				} else {
-					String[] rgb = new String[3];
-					rgb[0] = new String(new char[] { text_color.charAt(0), text_color.charAt(1) });
-					rgb[1] = new String(new char[] { text_color.charAt(2), text_color.charAt(3) });
-					rgb[2] = new String(new char[] { text_color.charAt(4), text_color.charAt(5) });
-					// Red * 65536 + Green * 256 + Blue * 1
-					int rgb_num = Integer.parseInt(rgb[0], 16) * 65536 + Integer.parseInt(rgb[1], 16) * 256
-							+ Integer.parseInt(rgb[2], 16);
-					color.add(rgb_num);
+				// 暂时只支持这几种，因为开发者翻遍F12也找不到控制弹幕颜色的字段在哪里（泪）
+				// 优先级：船员 > 年费老爷 > 月费老爷 > 普通
+				color_block: {
+					if (chat_json.getInt("guard_level") > 0) {
+						color.add(0xe33fff);// 紫色
+						break color_block;
+					}
+					if (chat_json.getInt("svip") == 1) {
+						color.add(0x66ccff);// 蓝色（天依色哦）
+						break color_block;
+					}
+					if (chat_json.getInt("vip") == 1) {
+						color.add(0xff6868);// 红色
+						break color_block;
+					}
+					color.add(0xffffff);// 白色
 				}
-				chat.append(text, room.getJSONObject(i).getInt("uid") + "",
+				chat.append(text2, chat_json.getInt("uid") + "",
 						(float) ((time - Config.live_config.START_TIME) / 1000), time / 1000);
-				total_json.put(room.getJSONObject(i));
+				total_json.put(chat_json);
 				if (first_run) {
-					LivePanel.getInstance().log("[缓冲区填充中]  " + room.getJSONObject(i).getString("text"));
+					LivePanel.getInstance().log("[缓冲区填充中]  " + text);
 				} else if (buffer == 0) {
-					LivePanel.getInstance().log("【警告 - 缓冲区" + buffer + "】  " + room.getJSONObject(i).getString("text"));
+					LivePanel.getInstance().log("【警告 - 缓冲区" + buffer + "】  " + text);
 				} else {
-					LivePanel.getInstance().log("[缓冲区" + buffer + "]  " + room.getJSONObject(i).getString("text"));
+					LivePanel.getInstance().log("[缓冲区" + buffer + "]  " + text);
 				}
 			}
 			if (!first_run && buffer == 0) {
@@ -171,8 +173,6 @@ public class LiveChat implements Runnable {
 					}
 				}
 			}
-
-			jsonArray_old = room;
 			if (stat_index != stat.length - 1) {
 				stat[stat_index] = buffer;
 				stat_index++;
@@ -216,6 +216,7 @@ public class LiveChat implements Runnable {
 			}
 			LivePanel.getInstance().refreshLabel(new_chat_count, buffer, first_run);
 			buffer = 0;
+			prepared = true;
 			if (chat.getCount() > 9) {
 				first_run = false;
 			}
