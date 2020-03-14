@@ -663,6 +663,11 @@ public class LivePanel extends JPanel {
 		Config.live_config.STATUS = false;
 		checkbox.setText("本次爬取完成，请输出到文件");
 		checkbox.setEnabled(false);
+		check.setEnabled(true);
+		field_delay.setEditable(true);
+		button_delay.setEnabled(true);
+		button_choose.setEnabled(true);
+		button_status.setEnabled(true);
 		checkbox.setSelected(false);
 		prevent.setEnabled(false);
 		Config.live_config.AUTO_STOP = false;
