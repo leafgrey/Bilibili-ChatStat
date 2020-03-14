@@ -9,15 +9,13 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.HttpURLConnection;
-import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -118,6 +116,8 @@ public class MainGui implements Runnable {
 	private File txtFile = null;
 	private ArrayList<String> logs;
 	private ImageIcon icon;
+	private JButton button_clear;
+	private boolean long_clicked = false;
 
 	/**
 	 * 主方法
@@ -157,7 +157,7 @@ public class MainGui implements Runnable {
 		frame.setIconImage(icon.getImage());
 		fileManager = new FileManager();
 		frame.setTitle("ChatStat - 哔哩哔哩弹幕统计工具 " + Config.VERSION + " by JellyBlack");
-		frame.setBounds(100, 100, 900, 650);
+		frame.setBounds(100, 100, 900, 700);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -383,6 +383,56 @@ public class MainGui implements Runnable {
 				spiderThread.start();
 			}
 		});
+
+		button_clear = new JButton("清空日志");
+		button_clear.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (long_clicked) {
+					return;
+				}
+				logs.clear();
+				list_info.setListData(logs.toArray(new String[0]));
+			}
+		});
+		button_clear.addMouseListener(new MouseAdapter() {
+			boolean thread_started = false;
+			Thread thread2;
+			Runnable runnable = new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						return;
+					}
+					long_clicked = true;
+					log("已强制刷新日志显示区");
+				}
+			};
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (!thread_started) {
+					thread2 = new Thread(runnable);
+					thread2.start();
+					thread_started = true;
+				}
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				thread2.interrupt();
+				try {
+					thread2.join();
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				thread_started = false;
+				long_clicked = false;
+			}
+		});
+		panel_confirm.add(button_clear);
 		panel_confirm.add(button_confirm);
 
 		LivePanel livePanel = new LivePanel();
@@ -925,11 +975,6 @@ public class MainGui implements Runnable {
 		}
 	}
 
-	/**
-	 * 输出日志到视频弹幕抓取区
-	 * 
-	 * @param log 日志
-	 */
 	public void log(String log) {
 		SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
 		logs.add(0, "[" + format.format(new Date()) + "] " + log);

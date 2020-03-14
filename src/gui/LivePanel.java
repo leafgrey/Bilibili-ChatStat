@@ -37,6 +37,7 @@ public class LivePanel extends JPanel {
 	private JLabel label_total;
 	private JButton button_choose;
 	private JButton button_status;
+	private JButton button_delay;
 	private JCheckBox check;
 	private int times = 0;
 	private int count = 0;
@@ -50,6 +51,8 @@ public class LivePanel extends JPanel {
 	private JCheckBox checkbox;
 	private Thread auto = null;
 	private boolean auto_stopped = false;
+	private JPanel panel;
+	private JCheckBox prevent;
 
 	/**
 	 * 创建控件
@@ -74,11 +77,52 @@ public class LivePanel extends JPanel {
 
 		JButton button = new JButton("清空日志");
 		button.addActionListener(new ActionListener() {
-
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				if (long_clicked) {
+					return;
+				}
 				logs.clear();
 				list.setListData(logs.toArray(new String[0]));
+
+			}
+		});
+		button.addMouseListener(new MouseAdapter() {
+			boolean thread_started = false;
+			Thread thread2;
+			Runnable runnable = new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						return;
+					}
+					long_clicked = true;
+					log("已强制刷新日志显示区");
+					refreshUi();
+				}
+			};
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (!thread_started) {
+					thread2 = new Thread(runnable);
+					thread2.start();
+					thread_started = true;
+				}
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				thread2.interrupt();
+				try {
+					thread2.join();
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				thread_started = false;
+				long_clicked = false;
 			}
 		});
 		panel_room.add(button);
@@ -96,8 +140,36 @@ public class LivePanel extends JPanel {
 		label_total = new JLabel("已爬取弹幕数：未开始");
 		panel_right.add(label_total);
 
+		panel = new JPanel();
+		panel_right.add(panel);
+
 		check = new JCheckBox("智能调整爬取间隔");
+		panel.add(check);
 		check.setSelected(Config.live_config.AUTO_DELAY);
+
+		prevent = new JCheckBox("防手胡（锁定控件）");
+		prevent.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (prevent.isSelected()) {
+					check.setEnabled(false);
+					field_delay.setEditable(false);
+					button_delay.setEnabled(false);
+					button_choose.setEnabled(false);
+					button_status.setEnabled(false);
+					checkbox.setEnabled(false);
+				} else {
+					check.setEnabled(true);
+					field_delay.setEditable(true);
+					button_delay.setEnabled(true);
+					button_choose.setEnabled(true);
+					button_status.setEnabled(true);
+					checkbox.setEnabled(true);
+				}
+			}
+		});
+		prevent.setEnabled(false);
+		panel.add(prevent);
 		check.addChangeListener(new ChangeListener() {
 
 			@Override
@@ -108,7 +180,6 @@ public class LivePanel extends JPanel {
 				Config.live_config.AUTO_DELAY = check.isSelected();
 			}
 		});
-		panel_right.add(check);
 
 		JPanel panel_delay = new JPanel();
 		panel_right.add(panel_delay);
@@ -121,7 +192,7 @@ public class LivePanel extends JPanel {
 		panel_delay.add(field_delay);
 		field_delay.setColumns(10);
 
-		JButton button_delay = new JButton("注册");
+		button_delay = new JButton("注册");
 		button_delay.addActionListener(new ActionListener() {
 
 			@Override
@@ -266,6 +337,7 @@ public class LivePanel extends JPanel {
 					checkbox.setSelected(false);
 					button_choose.setEnabled(true);
 					button_status.setEnabled(true);
+					prevent.setEnabled(false);
 					button_choose.setText("选择输出目录");
 					button_status.setText("开始爬取");
 					label_times.setText("爬取成功的次数：未开始");
@@ -322,6 +394,7 @@ public class LivePanel extends JPanel {
 						b = true;
 						refreshUi();
 					}
+					prevent.setEnabled(true);
 					Config.live_config.START_TIME = new Date().getTime();
 					Config.live_config.STATUS = true;
 					checkbox.setText("当主播关播时自动停止爬虫");
@@ -373,6 +446,7 @@ public class LivePanel extends JPanel {
 					checkbox.setSelected(false);
 					button_choose.setEnabled(true);
 					button_status.setEnabled(true);
+					prevent.setEnabled(false);
 					button_choose.setText("选择输出目录");
 					button_status.setText("开始爬取");
 					label_times.setText("爬取成功的次数：未开始");
@@ -571,6 +645,7 @@ public class LivePanel extends JPanel {
 		Config.live_config.START_TIME = new Date().getTime();
 		Config.live_config.STATUS = true;
 		setEnabled(false);
+		prevent.setEnabled(true);
 		button_choose.setEnabled(true);
 		Config.ALLOW_MODIFY = false;
 		MainGui.getInstance().setEnabled(false);
@@ -589,6 +664,7 @@ public class LivePanel extends JPanel {
 		checkbox.setText("本次爬取完成，请输出到文件");
 		checkbox.setEnabled(false);
 		checkbox.setSelected(false);
+		prevent.setEnabled(false);
 		Config.live_config.AUTO_STOP = false;
 		auto_stopped = true;
 		thread.interrupt();
@@ -598,5 +674,17 @@ public class LivePanel extends JPanel {
 			e.printStackTrace();
 		}
 		Config.live_config.STATUS = true;// 为保证输出文件时代码块执行正确，这里临时修改状态
+		// 为防止日志区不显示的情况，这里再刷新一下UI
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				refreshUi();
+			}
+		}).start();
 	}
 }

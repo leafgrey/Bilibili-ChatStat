@@ -24,7 +24,7 @@ public class LiveRoomStatus implements Runnable {
 
 	@Override
 	public void run() {
-		if(expectedStatus == 1) {
+		if (expectedStatus == 1) {
 			LivePanel.getInstance().log("###  正在处理房间号  ###");
 			LivePanel.getInstance().refreshUi();
 			if (!LiveChat.utilRoomNumber()) {
@@ -58,8 +58,7 @@ public class LiveRoomStatus implements Runnable {
 					LivePanel.getInstance().refreshUi();
 				}
 			}
-		}
-		else {
+		} else {
 			int i = 0;
 			while (!Thread.interrupted()) {
 				try {
@@ -117,28 +116,5 @@ public class LiveRoomStatus implements Runnable {
 			LivePanel.getInstance().refreshUi();
 			return stringBuff;
 		}
-	}
-
-	/**
-	 * 从服务器获取字符串
-	 * 
-	 * @param url_ url
-	 * @return 字符串
-	 * @throws IOException IO异常
-	 */
-	private String getDataFromServer(String url_) throws IOException {
-		URL url = new URL(url_);
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("GET");
-		conn.setDoOutput(true);
-		conn.setConnectTimeout(20000);
-		conn.setReadTimeout(20000);
-		Reader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
-		StringBuilder sb = new StringBuilder();
-		for (int c; (c = in.read()) >= 0;) {
-			sb.append((char) c);
-		}
-		conn.disconnect();
-		return sb.toString();
 	}
 }
