@@ -492,7 +492,8 @@ public class TabPanel extends JPanel {
 		textArea.setEditable(false);
 		switch (tab) {
 		case 1:
-			textArea.setText("【重复弹幕统计】\n该功能可查看观众发送最多的弹幕是什么。\n1.2.0新增功能：在ChatStat.csv文件中“替换字符串”一栏可填写 <@ignore> 或 <@only> 标签，前者可以在统计时忽略匹配对应正则表达式的弹幕，后者可以在统计时只统计匹配对应正则表达式的弹幕。该功能对所有统计项均适用（需打开“高级弹幕匹配开关”），详见Github仓库。");
+			textArea.setText(
+					"【重复弹幕统计】\n该功能可查看观众发送最多的弹幕是什么。\n1.2.0新增功能：在ChatStat.csv文件中“替换字符串”一栏可填写 <@ignore> 或 <@only> 标签，前者可以在统计时忽略匹配对应正则表达式的弹幕，后者可以在统计时只统计匹配对应正则表达式的弹幕。该功能对所有统计项均适用（需打开“高级弹幕匹配开关”），详见Github仓库。");
 			break;
 		case 2:
 			textArea.setText(

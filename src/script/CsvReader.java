@@ -76,7 +76,7 @@ public class CsvReader {
 			if (processed.size() == 1) {
 				processed.add("");
 			}
-			if(processed.get(0).isEmpty()) {
+			if (processed.get(0).isEmpty()) {
 				continue;
 			}
 			arrayList.add(processed.toArray(new String[0]));

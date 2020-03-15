@@ -154,10 +154,12 @@ public class XmlLoader {
 				return loadFromString(replaceChar(new String(newBytes, "UTF-8")));
 			} catch (IOException e1) {
 				MainGui.getInstance().notifyXmlHandlingException(e1);
+				throw new InterruptedException();
 			}
 
 		} catch (Exception ex) {
 			MainGui.getInstance().notifyXmlHandlingException(ex);
+			throw new InterruptedException();
 		}
 		return document;
 	}
@@ -178,9 +180,11 @@ public class XmlLoader {
 				return DocumentHelper.parseText(replaceChar(str));
 			} catch (DocumentException e1) {
 				MainGui.getInstance().notifyXmlHandlingException(e1);
+				throw new InterruptedException();
 			}
 		} catch (Exception ex) {
 			MainGui.getInstance().notifyXmlHandlingException(ex);
+			throw new InterruptedException();
 		}
 		return document;
 	}

@@ -10,8 +10,9 @@ public class ChatUtil {
 	 * 处理弹幕
 	 * 
 	 * @param chat 弹幕实体类对象
+	 * @throws InterruptedException
 	 */
-	public static void utilChat(Chat chat) {
+	public static void utilChat(Chat chat) throws InterruptedException {
 		if (Config.public_config.TO_SBC) {
 			MainGui.getInstance().initProgressBar(chat.getCount());
 			chat.to_sbc();
@@ -28,7 +29,8 @@ public class ChatUtil {
 			MainGui.getInstance().progressFinish();
 		}
 		if (Config.public_config.ADVANCED_MATCH) {
-			MainGui.getInstance().initProgressBar(Config.ADVANCED_MATCH_SET.length + Config.IGNORE_CHAT_SET.length + Config.ONLY_CHAT_SET.length);
+			MainGui.getInstance().initProgressBar(
+					Config.ADVANCED_MATCH_SET.length + Config.IGNORE_CHAT_SET.length + Config.ONLY_CHAT_SET.length);
 			chat.advanced_match(Config.public_config.IGNORE_CASES, Config.ADVANCED_MATCH_SET);
 			MainGui.getInstance().progressFinish();
 		}

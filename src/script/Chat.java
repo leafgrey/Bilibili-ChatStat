@@ -1,6 +1,7 @@
 package script;
 
 import java.util.ArrayList;
+import java.util.regex.PatternSyntaxException;
 
 import gui.MainGui;
 
@@ -194,8 +195,9 @@ public class Chat {
 	 * 
 	 * @param ignore_cases 是否忽略大小写
 	 * @param set          合并规则库
+	 * @throws InterruptedException
 	 */
-	public void advanced_match(boolean ignore_cases, String[][] set) {
+	public void advanced_match(boolean ignore_cases, String[][] set) throws InterruptedException {
 		for (int i = 0; i < set.length; i++) {
 			MainGui.getInstance().refreshProgressBar(i);
 			for (int j = 0; j < chats.size(); j++) {
@@ -212,34 +214,40 @@ public class Chat {
 		ArrayList<String> users_temp = new ArrayList<>();
 		ArrayList<Float> time_temp = new ArrayList<>();
 		ArrayList<Long> date_temp = new ArrayList<>();
-		for (int i = 0; i < chats.size(); i++) {
-			boolean b = true;
-			if(Config.ONLY_CHAT_SET.length != 0) {
-				b = false;
-				for(int j = 0; j < Config.ONLY_CHAT_SET.length; j ++) {
-					if(chats.get(i).matches(Config.ONLY_CHAT_SET[j])) {
-						b = true;
+		try {
+			for (int i = 0; i < chats.size(); i++) {
+				MainGui.getInstance().refreshProgressBar(Config.ADVANCED_MATCH_SET.length + i);
+				boolean b = true;
+				if (Config.ONLY_CHAT_SET.length != 0) {
+					b = false;
+					for (int j = 0; j < Config.ONLY_CHAT_SET.length; j++) {
+						if (chats.get(i).matches(Config.ONLY_CHAT_SET[j])) {
+							b = true;
+						}
+					}
+					if (b) {
+						chats_temp.add(chats.get(i));
+						users_temp.add(users.get(i));
+						time_temp.add(time.get(i));
+						date_temp.add(date.get(i));
+					}
+					continue;
+				}
+				for (int j = 0; j < Config.IGNORE_CHAT_SET.length; j++) {
+					if (chats.get(i).matches(Config.IGNORE_CHAT_SET[j])) {
+						b = false;
 					}
 				}
-				if(b) {
+				if (b) {
 					chats_temp.add(chats.get(i));
 					users_temp.add(users.get(i));
 					time_temp.add(time.get(i));
 					date_temp.add(date.get(i));
 				}
-				continue;
 			}
-			for(int j = 0; j < Config.IGNORE_CHAT_SET.length; j ++) {
-				if(chats.get(i).matches(Config.IGNORE_CHAT_SET[j])) {
-					b = false;
-				}
-			}
-			if(b) {
-				chats_temp.add(chats.get(i));
-				users_temp.add(users.get(i));
-				time_temp.add(time.get(i));
-				date_temp.add(date.get(i));
-			}
+		} catch (PatternSyntaxException e) {
+			MainGui.getInstance().notifyXmlHandlingException(e);
+			throw new InterruptedException();
 		}
 		chats = chats_temp;
 		users = users_temp;

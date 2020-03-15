@@ -48,8 +48,9 @@ public class OutputManager {
 	 * @param titles   表头，可为null
 	 * @param lists    数据列表
 	 * @param autoOpen 是否自动打开保存的文件
+	 * @throws InterruptedException
 	 */
-	public static void saveToCsv(String[] titles, ArrayList<?>[] lists, boolean autoOpen) {
+	public static void saveToCsv(String[] titles, ArrayList<?>[] lists, boolean autoOpen) throws InterruptedException {
 		FileOutputStream out = null;
 		OutputStreamWriter osw = null;
 		BufferedWriter bw = null;
@@ -59,6 +60,7 @@ public class OutputManager {
 			} catch (IOException e) {
 				e.printStackTrace();
 				MainGui.getInstance().notifyXmlHandlingException(e);
+				throw new InterruptedException();
 			}
 		}
 		try {
@@ -100,6 +102,7 @@ public class OutputManager {
 		} catch (Exception e) {
 			e.printStackTrace();
 			MainGui.getInstance().notifyXmlHandlingException(e);
+			throw new InterruptedException();
 		} finally {
 			if (bw != null) {
 				try {

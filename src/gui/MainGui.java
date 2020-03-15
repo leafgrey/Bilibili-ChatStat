@@ -27,6 +27,7 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
@@ -754,6 +755,27 @@ public class MainGui implements Runnable {
 				ArrayList<String> ignore_chats = new ArrayList<>();
 				ArrayList<String> only_chats = new ArrayList<>();
 				ArrayList<String[]> set2 = new ArrayList<>();
+				ArrayList<String> failures = new ArrayList<>();
+				for (int i = 0; i < set.length; i++) {
+					try {
+						new String("").matches(set[i][0]);
+					} catch (Exception e) {
+						failures.add(set[i][0]);
+					}
+				}
+				if (failures.size() > 0) {
+					StringBuilder sb = new StringBuilder("ChatStat.csv中以下正则表达式不合法。请修正后重启ChatStat。\n");
+					for (int i = 0; i < failures.size(); i++) {
+						sb.append("\n" + failures.get(i));
+					}
+					sb.append(
+							"\n\n点击“确定”终止运行，点击“取消”继续运行。\n（如果继续运行，进行正则匹配时会出问题。）\n\n提示：检查你的正则表达式是否有未转义的以下字符：\n$      (      )      *      +      .      [      ?      \\      ^      {      |");
+					int result = JOptionPane.showConfirmDialog(frame, sb.toString(), "正则表达式读取失败",
+							JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+					if (result == JOptionPane.OK_OPTION) {
+						System.exit(0);
+					}
+				}
 				// 读取特殊标记
 				for (int i = 0; i < set.length; i++) {
 					if (set[i][1].replace(" ", "").toLowerCase().equals(Config.CHAT_TAG_IGNORE)) {
@@ -770,7 +792,6 @@ public class MainGui implements Runnable {
 				Config.IGNORE_CHAT_SET = ignore_chats.toArray(new String[0]);
 				Config.ONLY_CHAT_SET = only_chats.toArray(new String[0]);
 				status = 1;
-
 			} else {
 				ArrayList<String> list1 = new ArrayList<>();
 				ArrayList<String> list2 = new ArrayList<>();
@@ -794,7 +815,11 @@ public class MainGui implements Runnable {
 				list2.add(Config.ADVANCED_MATCH_SET[i][1]);
 			}
 			OutputManager.setFile(new File(new File("").getAbsolutePath() + "\\" + "ChatStat.csv"));
-			OutputManager.saveToCsv(null, new ArrayList[] { list1, list2 }, false);
+			try {
+				OutputManager.saveToCsv(null, new ArrayList[] { list1, list2 }, false);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
 			OutputManager.setFile(null);
 			status = 2;
 		}
@@ -817,7 +842,6 @@ public class MainGui implements Runnable {
 		table.getTableHeader().setReorderingAllowed(false);
 		scroll_set = new JScrollPane(table);
 		tab7.add(scroll_set, BorderLayout.CENTER);
-
 	}
 
 	/**
