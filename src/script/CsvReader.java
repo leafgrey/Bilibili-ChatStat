@@ -35,6 +35,9 @@ public class CsvReader {
 		ArrayList<String[]> arrayList = new ArrayList<>();
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
+			if(line.charAt(0) == ',') {
+				continue;
+			}
 			String[] split = line.split(",");
 			if (split.length == 0) {
 				split = new String[] { line };

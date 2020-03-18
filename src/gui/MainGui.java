@@ -767,12 +767,16 @@ public class MainGui implements Runnable {
 					StringBuilder sb = new StringBuilder("ChatStat.csv中以下正则表达式不合法。请修正后重启ChatStat。\n");
 					for (int i = 0; i < failures.size(); i++) {
 						sb.append("\n" + failures.get(i));
+						if(i == 9 && failures.size() > 10) {
+							sb.append("\n等更多" + (failures.size() - i - 1) + "处");
+							break;
+						}
 					}
 					sb.append(
 							"\n\n点击“确定”终止运行，点击“取消”继续运行。\n（如果继续运行，进行正则匹配时会出问题。）\n\n提示：检查你的正则表达式是否有未转义的以下字符：\n$      (      )      *      +      .      [      ?      \\      ^      {      |");
 					int result = JOptionPane.showConfirmDialog(frame, sb.toString(), "正则表达式读取失败",
 							JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
-					if (result == JOptionPane.OK_OPTION) {
+					if (result != JOptionPane.CANCEL_OPTION) {
 						System.exit(0);
 					}
 				}

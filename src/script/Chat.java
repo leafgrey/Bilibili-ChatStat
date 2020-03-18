@@ -198,23 +198,27 @@ public class Chat {
 	 * @throws InterruptedException
 	 */
 	public void advanced_match(boolean ignore_cases, String[][] set) throws InterruptedException {
-		for (int i = 0; i < set.length; i++) {
-			MainGui.getInstance().refreshProgressBar(i);
-			for (int j = 0; j < chats.size(); j++) {
-				String text;
-				if (ignore_cases) {
-					text = chats.get(j).toLowerCase();
-				} else {
-					text = chats.get(j);
-				}
-				chats.set(j, text.replaceAll(set[i][0], set[i][1]));
-			}
-		}
 		ArrayList<String> chats_temp = new ArrayList<>();
 		ArrayList<String> users_temp = new ArrayList<>();
 		ArrayList<Float> time_temp = new ArrayList<>();
 		ArrayList<Long> date_temp = new ArrayList<>();
 		try {
+			for (int i = 0; i < set.length; i++) {
+				MainGui.getInstance().refreshProgressBar(i);
+				for (int j = 0; j < chats.size(); j++) {
+					String text;
+					if (ignore_cases) {
+						text = chats.get(j).toLowerCase();
+					} else {
+						text = chats.get(j);
+					}
+					chats.set(j, text.replaceAll(set[i][0], set[i][1]));
+				}
+			}
+			chats_temp = new ArrayList<>();
+			users_temp = new ArrayList<>();
+			time_temp = new ArrayList<>();
+			date_temp = new ArrayList<>();
 			for (int i = 0; i < chats.size(); i++) {
 				MainGui.getInstance().refreshProgressBar(Config.ADVANCED_MATCH_SET.length + i);
 				boolean b = true;
