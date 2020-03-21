@@ -29,7 +29,7 @@ public class Config {
 		public static boolean IGNORE_SPACES = true;// 删除首尾空格
 		public static boolean SPLIT_CHATS = true;// 试图将弹幕拆分为单个片段，如“awsl awsl awsl”将记为“awsl”，“？ ？ ？ ？ ？”将记为“？”
 		public static boolean ADVANCED_MATCH = true;// 高级弹幕匹配开关
-		public static boolean MARK_ONCE = true;// 一个人发的多条相同弹幕只记一次（“相同弹幕”支持前三个选项，即前三个选项处理完毕后，再判断是否是“相同弹幕”）
+		public static boolean MARK_ONCE = false;// 一个人发的多条相同弹幕只记一次（“相同弹幕”支持前三个选项，即前三个选项处理完毕后，再判断是否是“相同弹幕”）
 		public static int OUTPUT_STYLE = 1;// 输出方式，0为swing表格展示，1为csv文件展示
 	}
 

@@ -25,18 +25,17 @@ public class XmlLoader {
 	 * 
 	 * @param files 文件数组
 	 * @return 弹幕实体类对象
+	 * @throws InterruptedException
 	 */
-	public static Chat loadChatFromXml(File[] files) {
+	public static Chat loadChatFromXml(File[] files) throws InterruptedException {
 		Chat chat = new Chat(new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Float>(),
 				new ArrayList<Long>());
 		for (int i = 0; i < files.length; i++) {
 			MainGui.getInstance().refreshProgressBar(i);
 			Document document;
-			try {
-				document = loadFromFile(files[i].getPath());
-			} catch (InterruptedException e) {
-				return null;
-			}
+
+			document = loadFromFile(files[i].getPath());
+
 			org.dom4j.Element root = document.getRootElement();
 			ArrayList<org.dom4j.Element> list = (ArrayList<org.dom4j.Element>) root.elements("d");
 			ArrayList<String> chats = new ArrayList<>();
@@ -60,17 +59,14 @@ public class XmlLoader {
 	 * 
 	 * @param xmls xml字符串
 	 * @return 弹幕实体类对象
+	 * @throws InterruptedException
 	 */
-	public static Chat loadChatFromXml(String[] xmls) {
+	public static Chat loadChatFromXml(String[] xmls) throws InterruptedException {
 		Chat chat = new Chat(new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Float>(),
 				new ArrayList<Long>());
 		for (int i = 0; i < xmls.length; i++) {
 			Document document;
-			try {
-				document = loadFromString(xmls[i]);
-			} catch (InterruptedException e) {
-				return null;
-			}
+			document = loadFromString(xmls[i]);
 			org.dom4j.Element root = document.getRootElement();
 			ArrayList<org.dom4j.Element> list = (ArrayList<org.dom4j.Element>) root.elements("d");
 			ArrayList<String> chats = new ArrayList<>();
@@ -94,16 +90,13 @@ public class XmlLoader {
 	 * 
 	 * @param xml xml字符串
 	 * @return 弹幕实体类对象
+	 * @throws InterruptedException
 	 */
-	public static Chat loadChatFromXml(String xml) {
+	public static Chat loadChatFromXml(String xml) throws InterruptedException {
 		Chat chat = new Chat(new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Float>(),
 				new ArrayList<Long>());
 		Document document;
-		try {
-			document = loadFromString(xml);
-		} catch (InterruptedException e) {
-			return null;
-		}
+		document = loadFromString(xml);
 		org.dom4j.Element root = document.getRootElement();
 		ArrayList<org.dom4j.Element> list = (ArrayList<org.dom4j.Element>) root.elements("d");
 		ArrayList<String> chats = new ArrayList<>();
