@@ -1,6 +1,8 @@
 package script;
 
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import gui.MainGui;
@@ -220,12 +222,13 @@ public class Chat {
 			time_temp = new ArrayList<>();
 			date_temp = new ArrayList<>();
 			for (int i = 0; i < chats.size(); i++) {
-				MainGui.getInstance().refreshProgressBar(Config.ADVANCED_MATCH_SET.length + i);
 				boolean b = true;
 				if (Config.ONLY_CHAT_SET.length != 0) {
 					b = false;
 					for (int j = 0; j < Config.ONLY_CHAT_SET.length; j++) {
-						if (chats.get(i).matches(Config.ONLY_CHAT_SET[j])) {
+						Pattern pattren = Pattern.compile(Config.ONLY_CHAT_SET[j]);
+						Matcher matcher = pattren.matcher(chats.get(i));
+						if (matcher.find()) {
 							b = true;
 						}
 					}
@@ -238,7 +241,9 @@ public class Chat {
 					continue;
 				}
 				for (int j = 0; j < Config.IGNORE_CHAT_SET.length; j++) {
-					if (chats.get(i).matches(Config.IGNORE_CHAT_SET[j])) {
+					Pattern pattren = Pattern.compile(Config.IGNORE_CHAT_SET[j]);
+					Matcher matcher = pattren.matcher(chats.get(i));
+					if (matcher.find()) {
 						b = false;
 					}
 				}

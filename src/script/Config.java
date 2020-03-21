@@ -5,7 +5,7 @@ package script;
  */
 public class Config {
 
-	public static String VERSION = "1.2.1_dev";// 版本
+	public static String VERSION = "1.2.2";// 版本
 	public static boolean ALLOW_MODIFY = true;// 是否允许修改配置
 
 	// 高级弹幕合并，格式为{"正则表达式","替换文字"}，如{"^OH{2,}$","OHHHH"}；也可以在“替换文字”后添加注释。

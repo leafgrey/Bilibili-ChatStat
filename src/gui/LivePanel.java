@@ -253,6 +253,9 @@ public class LivePanel extends JPanel {
 
 			@Override
 			public void mousePressed(MouseEvent e) {
+				if (prevent.isSelected()) {
+					return;
+				}
 				if (!thread_started) {
 					thread2 = new Thread(runnable);
 					thread2.start();
@@ -264,6 +267,9 @@ public class LivePanel extends JPanel {
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
+				if (prevent.isSelected()) {
+					return;
+				}
 				thread2.interrupt();
 				try {
 					thread2.join();
