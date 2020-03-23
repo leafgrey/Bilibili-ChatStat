@@ -200,7 +200,7 @@ public class MainGui implements Runnable {
 		flowLayout_2.setAlignment(FlowLayout.LEFT);
 		panel_info.add(panel_av);
 
-		label_av = new JLabel("爬取单视频 - 键入av号：av");
+		label_av = new JLabel("爬取单视频 - 键入av/bv号：");
 		panel_av.add(label_av);
 
 		field_av = new JTextField();
@@ -213,22 +213,67 @@ public class MainGui implements Runnable {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (!selected) {
-					try {
-						Integer.parseInt(field_av.getText());
-					} catch (NumberFormatException err) {
+					String text = field_av.getText().trim();
+					if (text.toUpperCase().startsWith("AV")) {
+						try {
+							Integer.parseInt(text.toUpperCase().replace("AV", ""));
+						} catch (NumberFormatException err) {
+							new Dialog("输入错误", "请检查输入").setVisible(true);
+							return;
+						}
+						selected = true;
+						Config.spider_config.avs = new String[] { text.toUpperCase() };
+						Config.spider_config.mode = 0;
+						log("已读取到AV号");
+						button_av.setText("撤销");
+						button_import_2.setEnabled(false);
+						button_uid.setEnabled(false);
+						field_av.setEnabled(false);
+						button_import.setEnabled(false);
+						field_uid.setEnabled(false);
+					} else if (text.toUpperCase().startsWith("BV")) {
+						selected = true;
+						Config.spider_config.avs = new String[] { text };
+						Config.spider_config.mode = 0;
+						log("已读取到BV号");
+						button_av.setText("撤销");
+						button_import_2.setEnabled(false);
+						button_uid.setEnabled(false);
+						field_av.setEnabled(false);
+						button_import.setEnabled(false);
+						field_uid.setEnabled(false);
+					} else if (text.matches("[0-9]+")) {
+						try {
+							Integer.parseInt(text);
+						} catch (NumberFormatException err) {
+							new Dialog("输入错误", "请检查输入").setVisible(true);
+							return;
+						}
+						selected = true;
+						Config.spider_config.avs = new String[] { "AV" + text };
+						Config.spider_config.mode = 0;
+						log("已读取到AV号");
+						button_av.setText("撤销");
+						button_import_2.setEnabled(false);
+						button_uid.setEnabled(false);
+						field_av.setEnabled(false);
+						button_import.setEnabled(false);
+						field_uid.setEnabled(false);
+					} else if (text.matches("[A-Za-z0-9]+")) {
+						selected = true;
+						Config.spider_config.avs = new String[] { "BV" + text };
+						Config.spider_config.mode = 0;
+						log("已读取到BV号");
+						button_av.setText("撤销");
+						button_import_2.setEnabled(false);
+						button_uid.setEnabled(false);
+						field_av.setEnabled(false);
+						button_import.setEnabled(false);
+						field_uid.setEnabled(false);
+					} else {
 						new Dialog("输入错误", "请检查输入").setVisible(true);
 						return;
 					}
-					selected = true;
-					Config.spider_config.avs = new int[] { Integer.parseInt(field_av.getText()) };
-					Config.spider_config.mode = 0;
-					log("已选定单视频爬取");
-					button_av.setText("撤销");
-					button_import_2.setEnabled(false);
-					button_uid.setEnabled(false);
-					field_av.setEnabled(false);
-					button_import.setEnabled(false);
-					field_uid.setEnabled(false);
 				} else {
 					reset();
 				}
@@ -255,32 +300,42 @@ public class MainGui implements Runnable {
 					return;
 				}
 				try {
-					ArrayList<Integer> list = new ArrayList<>();
+					ArrayList<String> list = new ArrayList<>();
 					BufferedReader bufferedReader = new BufferedReader(
 							new InputStreamReader(new FileInputStream(txtFile)));
 					String string;
 					while ((string = bufferedReader.readLine()) != null) {
-						String string2 = string.toLowerCase().replace("av", "");
-						if (string2.isEmpty()) {
+						String text = string.trim();
+						if (text.isEmpty()) {
 							continue;
 						}
-						try {
-							int av = Integer.parseInt(string2);
-							if (av <= 0) {
-								log(string + " 导入失败，av号无法识别");
+						if (text.toUpperCase().startsWith("AV")) {
+							try {
+								Integer.parseInt(text.toUpperCase().replace("AV", ""));
+							} catch (NumberFormatException err) {
+								log(string + " 导入失败，av/bv号无法识别");
 								continue;
 							}
-							list.add(av);
-						} catch (NumberFormatException e) {
-							log(string + " 导入失败，av号无法识别");
+							list.add(text.toUpperCase());
+						} else if (text.toUpperCase().startsWith("BV")) {
+							list.add(text);
+						} else if (text.matches("[0-9]+")) {
+							try {
+								Integer.parseInt(text);
+							} catch (NumberFormatException err) {
+								log(string + " 导入失败，av/bv号无法识别");
+								continue;
+							}
+							list.add("AV" + text);
+						} else if (text.matches("[A-Za-z0-9]+")) {
+							list.add("BV" + text);
+						} else {
+							log(string + " 导入失败，av/bv号无法识别");
+							continue;
 						}
 					}
-					int[] avs = new int[list.size()];
-					for (int i = 0; i < list.size(); i++) {
-						avs[i] = list.get(i);
-					}
-					Config.spider_config.avs = avs;
-					log("导入完毕，共发现 " + avs.length + " 个av号");
+					Config.spider_config.avs = list.toArray(new String[0]);
+					log("导入完毕，共发现 " + list.size() + " 个av/bv号");
 					button_import.setText("重选txt");
 					Config.spider_config.mode = 2;
 					bufferedReader.close();

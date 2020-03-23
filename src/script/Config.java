@@ -5,7 +5,7 @@ package script;
  */
 public class Config {
 
-	public static String VERSION = "1.3.0";// 版本
+	public static String VERSION = "1.4.0";// 版本
 	public static boolean ALLOW_MODIFY = true;// 是否允许修改配置
 	// 高级弹幕合并，格式为{"正则表达式","替换文字"}，如{"^OH{2,}$","OHHHH"}；也可以在“替换文字”后添加注释。
 	// 这是预设的规则库，使用者可以自定义。
@@ -35,7 +35,7 @@ public class Config {
 	// 爬取视频弹幕配置
 	public static class spider_config {
 		public static int mode = 0;// 模式，0为爬取单视频，1为爬取多视频，2为爬取指定up主的全部视频
-		public static int[] avs;// av号列表
+		public static String[] avs;// av/bv号列表
 		public static int uid = 0;// UP主的UID
 	}
 

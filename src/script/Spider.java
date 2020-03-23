@@ -158,7 +158,7 @@ public class Spider implements Runnable {
 				e.printStackTrace();
 				return;
 			} catch (JSONException e) {
-				MainGui.getInstance().log("【警告】在获取av" + Config.spider_config.avs[0] + "的弹幕时发生错误，视频可能不存在");
+				MainGui.getInstance().log("【警告】在获取" + Config.spider_config.avs[0] + "的弹幕时发生错误，视频可能不存在");
 				MainGui.getInstance().setEnabled(true);
 				MainGui.getInstance().reset();
 				e.printStackTrace();
@@ -188,7 +188,7 @@ public class Spider implements Runnable {
 						MainGui.getInstance().reset();
 						return;
 					}
-					int[] avs = Config.spider_config.avs;
+					String[] avs = Config.spider_config.avs;
 					MainGui.getInstance().log("视频弹幕爬取开始，总计视频数为 " + avs.length);
 					MainGui.getInstance().setButtonText("正在爬取中...");
 					confirmed = false;
@@ -197,7 +197,7 @@ public class Spider implements Runnable {
 						try {
 							data = getVideoInfoJson(avs[i] + "");
 						} catch (JSONException e) {
-							MainGui.getInstance().log("【警告】在获取av" + Config.spider_config.avs[i] + "的弹幕时发生错误，视频可能不存在");
+							MainGui.getInstance().log("【警告】在获取" + Config.spider_config.avs[i] + "的弹幕时发生错误，视频可能不存在");
 							failures++;
 							randomSleep();
 							continue;
@@ -327,7 +327,7 @@ public class Spider implements Runnable {
 							try {
 								data = getVideoInfoJson(avs[i] + "");
 							} catch (JSONException error) {
-								MainGui.getInstance().log("【警告】在获取av" + avs[i] + "的弹幕时发生错误，视频可能不存在");
+								MainGui.getInstance().log("【警告】在获取" + avs[i] + "的弹幕时发生错误，视频可能不存在");
 								failures++;
 								randomSleep();
 								continue;
@@ -406,7 +406,7 @@ public class Spider implements Runnable {
 			JSONArray array = new JSONObject(json).getJSONObject("data").getJSONObject("list").getJSONArray("vlist");
 			for (int i = 0; i < array.length(); i++) {
 				JSONObject video = array.getJSONObject(i);
-				avs.add(video.getInt("aid") + "");
+				avs.add("AV" + video.getInt("aid"));
 			}
 			currentPage++;
 			randomSleep();
@@ -457,7 +457,13 @@ public class Spider implements Runnable {
 	}
 
 	private JSONObject getVideoInfoJson(String av) throws IOException, JSONException {
-		String text = getDataFromServer("https://api.bilibili.com/x/web-interface/view?aid=" + av);
+		String text;
+		if(av.startsWith("AV")) {
+			text = getDataFromServer("https://api.bilibili.com/x/web-interface/view?aid=" + av.replace("AV", ""));
+		}
+		else{
+			text = getDataFromServer("https://api.bilibili.com/x/web-interface/view?bvid=" + av);
+		}
 		return new JSONObject(text).getJSONObject("data");
 	}
 
