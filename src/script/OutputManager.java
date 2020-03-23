@@ -143,7 +143,7 @@ public class OutputManager {
 	 * 
 	 * @param jsonArray 要保存的json数组
 	 */
-	public static void saveToJson(JSONArray jsonArray) {
+	public static boolean saveToJson(JSONArray jsonArray) {
 		try {
 			file = new File(OutputManager.getFile().getPath() + ".json");
 			if (file.exists()) {
@@ -154,9 +154,11 @@ public class OutputManager {
 			writer.write(jsonArray.toString());
 			writer.flush();
 			writer.close();
+			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
 			new Dialog("输出失败", "很抱歉，输出为json失败。\n\n" + e.getClass().getName() + "\n" + e.getMessage()).setVisible(true);
+			return false;
 		}
 	}
 
@@ -166,8 +168,8 @@ public class OutputManager {
 	 * @param chat  弹幕实体类对象
 	 * @param color 颜色数组
 	 */
-	public static void saveToXml(Chat chat, int[] color) {
-		saveToXml(chat, color, file.getPath() + ".xml");
+	public static boolean saveToXml(Chat chat, int[] color) {
+		return saveToXml(chat, color, file.getPath() + ".xml");
 	}
 
 	/**
@@ -177,7 +179,7 @@ public class OutputManager {
 	 * @param color    颜色数组
 	 * @param filePath 指定文件路径
 	 */
-	public static void saveToXml(Chat chat, int[] color, String filePath) {
+	public static boolean saveToXml(Chat chat, int[] color, String filePath) {
 		try {
 			file = new File(filePath);
 			file.mkdirs();
@@ -206,12 +208,13 @@ public class OutputManager {
 				writer.write("</d>");
 			}
 			writer.write("</i>");
-
 			writer.flush();
 			writer.close();
+			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
 			new Dialog("输出失败", "很抱歉，输出为xml失败。\n\n" + e.getClass().getName() + "\n" + e.getMessage()).setVisible(true);
+			return false;
 		}
 	}
 
@@ -220,8 +223,8 @@ public class OutputManager {
 	 * 
 	 * @param chatStr 字符串形式的弹幕
 	 */
-	public static void saveToXml(String chatStr) {
-		saveToXml(chatStr, file.getPath());
+	public static boolean saveToXml(String chatStr) {
+		return saveToXml(chatStr, file.getPath());
 	}
 
 	/**
@@ -230,7 +233,7 @@ public class OutputManager {
 	 * @param chatStr  字符串形式的弹幕
 	 * @param filePath 文件路径
 	 */
-	public static void saveToXml(String chatStr, String filePath) {
+	public static boolean saveToXml(String chatStr, String filePath) {
 		File file = new File(filePath);
 		try {
 			file.mkdirs();
@@ -244,9 +247,11 @@ public class OutputManager {
 			BufferedWriter bw = new BufferedWriter(osw);
 			bw.write(chatStr);
 			bw.close();
+			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
 			new Dialog("输出失败", "很抱歉，输出为xml失败。\n\n" + e.getClass().getName() + "\n" + e.getMessage()).setVisible(true);
+			return false;
 		}
 	}
 

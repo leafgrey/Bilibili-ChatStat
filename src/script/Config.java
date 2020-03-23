@@ -5,9 +5,8 @@ package script;
  */
 public class Config {
 
-	public static String VERSION = "1.2.2";// 版本
+	public static String VERSION = "1.3.0";// 版本
 	public static boolean ALLOW_MODIFY = true;// 是否允许修改配置
-
 	// 高级弹幕合并，格式为{"正则表达式","替换文字"}，如{"^OH{2,}$","OHHHH"}；也可以在“替换文字”后添加注释。
 	// 这是预设的规则库，使用者可以自定义。
 	public static String[][] ADVANCED_MATCH_SET = { { "^[Oo][Hh]{2,}$", "OHHHH" }, { "^23{2,}$", "23333" },
@@ -49,6 +48,12 @@ public class Config {
 		public static boolean AUTO_START = false;// 自动启动爬虫
 		public static boolean AUTO_STOP = false;// 自动停止爬虫
 		public static long START_TIME = 0;// 开始爬取的时间戳
+		public static boolean MULTI_THREAD = false;// 多线程爬取
+		public static int MAX_DELAY = 100;// 最大延迟
+		/**
+		 * 封 号 斗 罗看过来！说的就是你！ 把下面的false改为true，然后就尽情享受封号的快感吧！（雾）
+		 */
+		public static boolean I_DO_NOT_FEAR_BANNING = false;
 	}
 
 	// 第一个选项卡的配置

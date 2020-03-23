@@ -25,13 +25,17 @@ public class LiveRoomStatus implements Runnable {
 	@Override
 	public void run() {
 		if (expectedStatus == 1) {
-			LivePanel.getInstance().log("###  正在处理房间号  ###");
-			LivePanel.getInstance().refreshUi();
-			if (!LiveChat.utilRoomNumber()) {
-				return;
+			if(!LiveChat.isLiveRoomHandled()) {
+				LivePanel.getInstance().log("###  正在处理房间号  ###");
+				LivePanel.getInstance().refreshUi();
+				if (!LiveChat.utilRoomNumber()) {
+					LivePanel.getInstance().onUtilRoomNumberFailed(1);
+					return;
+				}
+				LiveChat.setLiveRoomHandled(true);
+				LivePanel.getInstance().log("###  处理完毕，配置已保存  ###");
+				LivePanel.getInstance().refreshUi();
 			}
-			LivePanel.getInstance().log("###  处理完毕，配置已保存  ###");
-			LivePanel.getInstance().refreshUi();
 			int i = 0;
 			while (!Thread.interrupted()) {
 				try {

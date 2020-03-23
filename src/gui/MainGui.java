@@ -767,7 +767,7 @@ public class MainGui implements Runnable {
 					StringBuilder sb = new StringBuilder("ChatStat.csv中以下正则表达式不合法。请修正后重启ChatStat。\n");
 					for (int i = 0; i < failures.size(); i++) {
 						sb.append("\n" + failures.get(i));
-						if(i == 9 && failures.size() > 10) {
+						if (i == 9 && failures.size() > 10) {
 							sb.append("\n等更多" + (failures.size() - i - 1) + "处");
 							break;
 						}

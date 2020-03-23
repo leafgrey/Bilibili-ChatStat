@@ -24,12 +24,16 @@ import javax.swing.event.ChangeListener;
 import script.Config;
 import script.LiveChat;
 import script.LiveRoomStatus;
+import script.MultiThreadUtil;
+import script.OnChatUtilFinished;
+import script.OnJsonUtilFinished;
+import script.OnXmlUtilFinished;
 import script.OutputManager;
 
 /**
  * 直播弹幕爬取的控件类
  */
-public class LivePanel extends JPanel {
+public class LivePanel extends JPanel implements OnChatUtilFinished, OnXmlUtilFinished, OnJsonUtilFinished {
 	private static final long serialVersionUID = 1L;
 	private JTextField field_delay;
 	private JTextField field_room;
@@ -50,9 +54,11 @@ public class LivePanel extends JPanel {
 	private boolean long_clicked = false;
 	private JCheckBox checkbox;
 	private Thread auto = null;
-	private boolean auto_stopped = false;
 	private JPanel panel;
 	private JCheckBox prevent;
+	private JCheckBox check_multiThread;
+	private JPanel panel_1;
+	private int style = 0;
 
 	/**
 	 * 创建控件
@@ -206,9 +212,23 @@ public class LivePanel extends JPanel {
 						log("【警告】间隔设置失败，请检查输入");
 						return;
 					}
-					if (Config.live_config.DELAY != delay) {
+					if (Config.live_config.MULTI_THREAD) {
+						if (delay < 50) {
+							if (Config.live_config.I_DO_NOT_FEAR_BANNING) {
+								Config.live_config.DELAY = delay;
+								log("尊贵的封  号  斗  罗大人，间隔已设置为" + delay + "ms");
+							} else if (Config.live_config.DELAY != delay) {
+								Config.live_config.DELAY = 50;
+								log("为了您的账号安全，多线程下间隔不允许小于50ms");
+								log("已将间隔设置为50ms");
+							}
+						} else if (Config.live_config.DELAY != delay) {
+							Config.live_config.DELAY = delay;
+							log("已将间隔设置为" + delay + "ms");
+						}
+					} else if (Config.live_config.DELAY != delay) {
 						Config.live_config.DELAY = delay;
-						log("间隔已设置为" + delay + "ms");
+						log("已将间隔设置为" + delay + "ms");
 					}
 					if (thread != null) {
 						thread.interrupt();
@@ -244,8 +264,14 @@ public class LivePanel extends JPanel {
 					successful = true;
 					log("###  临时零间隔模式已启动  ###");
 					refreshUi();
-					field_delay.setText("0");
-					Config.live_config.DELAY = 0;
+					if (Config.live_config.MULTI_THREAD && (!Config.live_config.I_DO_NOT_FEAR_BANNING)) {
+						field_delay.setText("50");
+						Config.live_config.DELAY = 50;
+						log("多线程下不能设置为0间隔，已将其设置为50ms");
+					} else {
+						field_delay.setText("0");
+						Config.live_config.DELAY = 0;
+					}
 					Config.live_config.AUTO_DELAY = false;
 					thread.interrupt();
 				}
@@ -253,7 +279,7 @@ public class LivePanel extends JPanel {
 
 			@Override
 			public void mousePressed(MouseEvent e) {
-				if (prevent.isSelected()) {
+				if (!button_delay.isEnabled()) {
 					return;
 				}
 				if (!thread_started) {
@@ -267,7 +293,7 @@ public class LivePanel extends JPanel {
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				if (prevent.isSelected()) {
+				if (!button_delay.isEnabled()) {
 					return;
 				}
 				thread2.interrupt();
@@ -316,46 +342,23 @@ public class LivePanel extends JPanel {
 							e1.printStackTrace();
 						}
 						log("###  您已手动停止爬虫  ###");
-						refreshUi();
 					}
-					Config.live_config.STATUS = false;
-					if (!auto_stopped) {
-						button_status.setText("等待抓取结束");
-						button_choose.setEnabled(false);
-						button_status.setEnabled(false);
-						thread.interrupt();
-						try {
-							thread.join();
-						} catch (InterruptedException e1) {
-							e1.printStackTrace();
-						}
-					}
-					Config.live_config.STATUS = false;
-					auto_stopped = false;
-					button_choose.setText("正在输出");
-					OutputManager.saveToJson(LiveChat.getJSONArray());
-					new Dialog("输出成功", "已输出到json文件。").setVisible(true);
-					;
-					thread = null;
-					reset();
-					checkbox.setText("当主播开播时自动启动爬虫");
-					checkbox.setEnabled(true);
-					checkbox.setSelected(false);
-					button_choose.setEnabled(true);
-					button_status.setEnabled(true);
-					prevent.setEnabled(false);
-					button_choose.setText("选择输出目录");
-					button_status.setText("开始爬取");
-					label_times.setText("爬取成功的次数：未开始");
-					label_total.setText("已爬取弹幕数：未开始");
-					Config.ALLOW_MODIFY = false;
-					setEnabled(true);
-					MainGui.getInstance().setEnabled(true);
-					field_room.setEnabled(true);
-					Config.ALLOW_MODIFY = true;
-					OutputManager.setFile(null);
-					log("###  输出文件完毕  ###");
+					log("###  正在等待弹幕处理完毕，请稍候  ###");
 					refreshUi();
+					button_choose.setEnabled(false);
+					button_choose.setText("等待弹幕处理完毕");
+					button_status.setEnabled(false);
+					checkbox.setEnabled(false);
+					if (style == 3) {
+						new Thread(new Runnable() {
+							@Override
+							public void run() {
+								onChatUtilFinish();
+							}
+						}).start();
+					}
+					Config.live_config.STATUS = false;
+					style = 1;
 				}
 			}
 		});
@@ -411,7 +414,7 @@ public class LivePanel extends JPanel {
 					Config.ALLOW_MODIFY = true;
 					button_choose.setText("结束并输出为json");
 					button_status.setText("结束并模拟输出xml");
-					thread = new Thread(new LiveChat(OutputManager.getFile(), b));
+					thread = new Thread(new LiveChat(OutputManager.getFile(), b, LivePanel.this));
 					thread.start();
 				} else {
 					if (Config.live_config.AUTO_STOP) {
@@ -423,55 +426,131 @@ public class LivePanel extends JPanel {
 							e1.printStackTrace();
 						}
 						log("###  您已手动停止爬虫  ###");
-						refreshUi();
 					}
-					Config.live_config.STATUS = false;
-					if (!auto_stopped) {
-						button_status.setText("等待抓取结束");
-						button_choose.setEnabled(false);
-						button_status.setEnabled(false);
-						thread.interrupt();
-						try {
-							thread.join();
-						} catch (InterruptedException e1) {
-							e1.printStackTrace();
-						}
-					}
-					Config.live_config.STATUS = false;
-					auto_stopped = false;
-					button_status.setText("正在输出");
-					OutputManager.saveToXml(LiveChat.getChat(), LiveChat.getChatColor());
-					new Dialog("输出成功",
-							"已输出到xml文件。\n导出的xml文件可供ChatStat统计使用，并不是真正的哔哩哔哩xml弹幕文件。\n1.2.0版本之后，您可以使用第三方xml弹幕转字幕工具转换输出的xml文件，并且保证弹幕颜色显示正常。")
-									.setVisible(true);
-					;
-					thread = null;
-					reset();
-					checkbox.setText("当主播开播时自动启动爬虫");
-					checkbox.setEnabled(true);
-					checkbox.setSelected(false);
-					button_choose.setEnabled(true);
-					button_status.setEnabled(true);
-					prevent.setEnabled(false);
-					button_choose.setText("选择输出目录");
-					button_status.setText("开始爬取");
-					label_times.setText("爬取成功的次数：未开始");
-					label_total.setText("已爬取弹幕数：未开始");
-					Config.ALLOW_MODIFY = false;
-					setEnabled(true);
-					MainGui.getInstance().setEnabled(true);
-					field_room.setEnabled(true);
-					Config.ALLOW_MODIFY = true;
-					OutputManager.setFile(null);
-					log("###  输出文件完毕  ###");
+					log("###  正在等待弹幕处理完毕，请稍候  ###");
 					refreshUi();
+					button_choose.setEnabled(false);
+					button_status.setEnabled(false);
+					button_status.setText("等待弹幕处理完毕");
+					checkbox.setEnabled(false);
+					if (style == 3) {
+						new Thread(new Runnable() {
+							@Override
+							public void run() {
+								onChatUtilFinish();
+							}
+						}).start();
+					}
+					style = 2;
+					Config.live_config.STATUS = false;
 				}
 			}
 		});
 		panel_control.add(button_status);
 
+		panel_1 = new JPanel();
+		panel_right.add(panel_1);
+
 		checkbox = new JCheckBox("当主播开播时自动启动爬虫");
+		panel_1.add(checkbox);
 		checkbox.setSelected(false);
+
+		check_multiThread = new JCheckBox("使用多线程");
+		check_multiThread.addActionListener(new ActionListener() {
+			Thread multi = null;
+			boolean thread_started = false;
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if ((!Config.live_config.MULTI_THREAD) && (!thread_started)) {
+					int result = JOptionPane.showConfirmDialog(null,
+							"多线程爬取可以有效加快爬取速度。\n开启后，程序需要先向服务器请求50次弹幕，以估计延迟，所以如果主播即将开播，请勿勾选。\n注意：为保护您的账号安全，若开启多线程，延迟不能小于50ms。\n确认开启吗？",
+							"使用多线程", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+					if (result == JOptionPane.YES_OPTION) {
+						if (field_room.getText().isEmpty()) {
+							new Dialog("配置不完整", "请输入直播间。").setVisible(true);
+							check_multiThread.setSelected(false);
+							return;
+						}
+						try {
+							Config.live_config.ROOM = Integer.parseInt(field_room.getText());
+						} catch (NumberFormatException err) {
+							new Dialog("直播间配置错误", "无法读取房间号。请检查直播间房间号。").setVisible(true);
+							check_multiThread.setSelected(false);
+							return;
+						}
+						if (Config.live_config.ROOM <= 0) {
+							new Dialog("直播间配置错误", "直播间房间号必须是大于0的整数。").setVisible(true);
+							check_multiThread.setSelected(false);
+							return;
+						}
+						field_room.setEnabled(false);
+						button_status.setEnabled(false);
+						button_delay.setEnabled(false);
+						checkbox.setEnabled(false);
+						Config.ALLOW_MODIFY = false;
+						MainGui.getInstance().setEnabled(false);
+						Config.ALLOW_MODIFY = true;
+						multi = new Thread(new Runnable() {
+							@Override
+							public void run() {
+								thread_started = true;
+								log("延迟测试已开始");
+								refreshUi();
+								int delay = new MultiThreadUtil().getMaxDelay();
+								if (delay == 0) {
+									return;
+								}
+								Config.live_config.MAX_DELAY = delay;
+								Config.live_config.MULTI_THREAD = true;
+								thread_started = false;
+								log("开启成功，最大延迟为" + delay + "ms，已保存配置");
+								if (delay > 1000) {
+									log("【警告】最大延迟超过1000ms，可能会影响后续超时判断");
+									log("【警告】建议重新测延迟");
+								}
+								log("注意：如果取消选择“使用多线程”，则下次需要重新测延迟");
+								if (Config.live_config.DELAY < 50 && (!Config.live_config.I_DO_NOT_FEAR_BANNING)) {
+									Config.live_config.DELAY = 50;
+									log("发现间隔小于50ms，已调整至50ms");
+								}
+								thread_started = false;
+								field_room.setEnabled(false);
+								button_status.setEnabled(true);
+								button_delay.setEnabled(true);
+								checkbox.setEnabled(true);
+								Config.ALLOW_MODIFY = false;
+								MainGui.getInstance().setEnabled(true);
+								Config.ALLOW_MODIFY = true;
+								field_delay.setText(Config.live_config.DELAY + "");
+								refreshUi();
+							}
+						});
+						multi.start();
+					} else {
+						check_multiThread.setSelected(false);
+					}
+				} else {
+					if (multi != null) {
+						multi.interrupt();
+					}
+					log("已取消多线程模式");
+					refreshUi();
+					LiveChat.setLiveRoomHandled(false);
+					thread_started = false;
+					field_room.setEnabled(true);
+					button_status.setEnabled(true);
+					button_delay.setEnabled(true);
+					checkbox.setEnabled(true);
+					Config.ALLOW_MODIFY = false;
+					MainGui.getInstance().setEnabled(true);
+					Config.ALLOW_MODIFY = true;
+					Config.live_config.MULTI_THREAD = false;
+					check_multiThread.setSelected(false);
+				}
+			}
+		});
+		panel_1.add(check_multiThread);
 		checkbox.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -504,6 +583,7 @@ public class LivePanel extends JPanel {
 						}
 						setEnabled(false);
 						button_choose.setEnabled(false);
+						check_multiThread.setEnabled(false);
 						Config.ALLOW_MODIFY = false;
 						MainGui.getInstance().setEnabled(false);
 						Config.ALLOW_MODIFY = true;
@@ -524,6 +604,10 @@ public class LivePanel extends JPanel {
 						log("###  已停止自动启动  ###");
 						refreshUi();
 						setEnabled(true);
+						check_multiThread.setEnabled(true);
+						if (Config.live_config.MULTI_THREAD) {
+							field_room.setEnabled(false);
+						}
 						button_choose.setEnabled(true);
 						Config.ALLOW_MODIFY = false;
 						MainGui.getInstance().setEnabled(true);
@@ -556,7 +640,6 @@ public class LivePanel extends JPanel {
 				}
 			}
 		});
-		panel_right.add(checkbox);
 
 	}
 
@@ -625,19 +708,30 @@ public class LivePanel extends JPanel {
 	@Override
 	public void setEnabled(boolean b) {
 		super.setEnabled(b);
-		if (!Config.ALLOW_MODIFY) {
-			return;
-		}
 		field_room.setEnabled(b);
+		check_multiThread.setEnabled(b);
 	}
 
-	/**
-	 * 重置状态展示区
-	 */
 	public void reset() {
 		times = 0;
 		count = 0;
 		failure = 0;
+		checkbox.setText("当主播开播时自动启动爬虫");
+		checkbox.setEnabled(true);
+		checkbox.setSelected(false);
+		button_delay.setEnabled(true);
+		button_choose.setEnabled(true);
+		button_status.setEnabled(true);
+		prevent.setEnabled(false);
+		button_choose.setText("选择输出目录");
+		button_status.setText("开始爬取");
+		label_times.setText("爬取成功的次数：未开始");
+		label_total.setText("已爬取弹幕数：未开始");
+		Config.ALLOW_MODIFY = false;
+		setEnabled(true);
+		MainGui.getInstance().setEnabled(true);
+		field_room.setEnabled(true);
+		Config.ALLOW_MODIFY = true;
 	}
 
 	/**
@@ -653,19 +747,22 @@ public class LivePanel extends JPanel {
 		setEnabled(false);
 		prevent.setEnabled(true);
 		button_choose.setEnabled(true);
+		button_status.setEnabled(true);
 		Config.ALLOW_MODIFY = false;
 		MainGui.getInstance().setEnabled(false);
 		Config.ALLOW_MODIFY = true;
+		button_delay.setEnabled(true);
 		button_choose.setText("结束并输出为json");
 		button_status.setText("结束并模拟输出xml");
 		checkbox.setText("当主播关播时自动停止爬虫");
 		checkbox.setSelected(false);
 		Config.live_config.AUTO_START = false;
-		thread = new Thread(new LiveChat(OutputManager.getFile(), true));
+		thread = new Thread(new LiveChat(OutputManager.getFile(), true, this));
 		thread.start();
 	}
 
 	public void onLiveStop() {
+		style = 3;
 		Config.live_config.STATUS = false;
 		checkbox.setText("本次爬取完成，请输出到文件");
 		checkbox.setEnabled(false);
@@ -677,25 +774,131 @@ public class LivePanel extends JPanel {
 		checkbox.setSelected(false);
 		prevent.setEnabled(false);
 		Config.live_config.AUTO_STOP = false;
-		auto_stopped = true;
-		thread.interrupt();
-		try {
-			thread.join();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+	}
+
+	public void onUtilRoomNumberFailed(int from) {
+		if (from == 0) {
+			reset();
+		} else if (from == 1) {
+			times = 0;
+			count = 0;
+			failure = 0;
+			Config.live_config.MULTI_THREAD = false;
+			checkbox.setText("当主播开播时自动启动爬虫");
+			check_multiThread.setEnabled(true);
+			check_multiThread.setSelected(false);
+			button_delay.setEnabled(true);
+			button_choose.setEnabled(true);
+			button_status.setEnabled(true);
+			prevent.setEnabled(false);
+			button_choose.setText("选择输出目录");
+			button_status.setText("开始爬取");
+			label_times.setText("爬取成功的次数：未开始");
+			label_total.setText("已爬取弹幕数：未开始");
+			Config.ALLOW_MODIFY = false;
+			setEnabled(true);
+			MainGui.getInstance().setEnabled(true);
+			field_room.setEnabled(true);
+			Config.ALLOW_MODIFY = true;
+		} else {
+			reset();
 		}
-		Config.live_config.STATUS = true;// 为保证输出文件时代码块执行正确，这里临时修改状态
-		// 为防止日志区不显示的情况，这里再刷新一下UI
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				refreshUi();
+	}
+
+	@Override
+	public void onJsonUtilFinish(boolean successful) {
+		if (successful) {
+			new Dialog("输出成功", "已输出到json文件。").setVisible(true);
+			;
+			thread = null;
+			reset();
+			if (Config.live_config.MULTI_THREAD) {
+				field_room.setEnabled(false);
 			}
-		}).start();
+			OutputManager.setFile(null);
+			log("###  输出文件完毕  ###");
+			refreshUi();
+		} else {
+			thread = null;
+			reset();
+			if (Config.live_config.MULTI_THREAD) {
+				field_room.setEnabled(false);
+			}
+			OutputManager.setFile(null);
+			log("###  输出文件失败  ###");
+			refreshUi();
+		}
+	}
+
+	@Override
+	public void onXmlUtilFinish(boolean successful) {
+		if (successful) {
+			new Dialog("输出成功",
+					"已输出到xml文件。\n导出的xml文件可供ChatStat统计使用，并不是真正的哔哩哔哩xml弹幕文件。\n1.2.0版本之后，您可以使用第三方xml弹幕转字幕工具转换输出的xml文件，并且保证弹幕颜色显示正常。")
+							.setVisible(true);
+			;
+			thread = null;
+			reset();
+			if (Config.live_config.MULTI_THREAD) {
+				field_room.setEnabled(false);
+			}
+			OutputManager.setFile(null);
+			log("###  输出文件完毕  ###");
+			refreshUi();
+		} else {
+			thread = null;
+			reset();
+			if (Config.live_config.MULTI_THREAD) {
+				field_room.setEnabled(false);
+			}
+			OutputManager.setFile(null);
+			log("###  输出文件失败  ###");
+			refreshUi();
+		}
+	}
+
+	@Override
+	public void onChatUtilFinish() {
+		if (style == 1) {
+			Config.live_config.STATUS = false;
+			log("###  正在输出文件  ###");
+			refreshUi();
+			button_choose.setText("正在输出");
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					LiveChat.saveToJson(LivePanel.this);
+				}
+			}).start();
+		} else if (style == 2) {
+			Config.live_config.STATUS = false;
+			log("###  正在输出文件  ###");
+			refreshUi();
+			button_status.setText("正在输出");
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					LiveChat.saveToXml(LivePanel.this);
+				}
+			}).start();
+		} else if (style == 3) {
+			Config.live_config.STATUS = true;// 为保证输出文件时代码块执行正确，这里临时修改状态
+			// 为防止日志区不显示的情况，这里再刷新一下UI
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					refreshUi();
+				}
+			}).start();
+		}
+	}
+
+	public void setRoomNumber() {
+		field_room.setText(Config.live_config.ROOM + "");
 	}
 }

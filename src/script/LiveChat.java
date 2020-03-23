@@ -8,7 +8,6 @@ import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.util.ArrayList;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,23 +18,24 @@ import gui.LivePanel;
 /**
  * 直播弹幕爬取
  */
-public class LiveChat implements Runnable {
+public class LiveChat implements Runnable, MultiThreadOperation {
 
 	File file;
-	private static Chat chat;
-	private static JSONArray total_json;
 	private static String stringBuff = "";
-	private static ArrayList<Integer> color = null;
-	private boolean liveRoomHandled;
+	private static boolean liveRoomHandled;
+	private static LiveChatUtil liveChatUtil;
+	private Thread util_thread;
+	private OnChatUtilFinished class_;
 
 	/**
 	 * 实例化
 	 * 
 	 * @param file 输出的文件
 	 */
-	public LiveChat(File file, boolean liveRoomHandled) {
+	public LiveChat(File file, boolean liveRoomHandled, OnChatUtilFinished class_) {
 		this.file = file;
-		this.liveRoomHandled = liveRoomHandled;
+		LiveChat.liveRoomHandled = liveRoomHandled;
+		this.class_ = class_;
 	}
 
 	/**
@@ -43,188 +43,53 @@ public class LiveChat implements Runnable {
 	 */
 	@Override
 	public void run() {
-		chat = new Chat(new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Float>(),
-				new ArrayList<Long>());
-		color = new ArrayList<>();
-		String[] ct_old = null;
-		total_json = new JSONArray();
-		boolean first_run = true;
-		boolean prepared = false;
-		int[] stat = new int[10];
-		int stat_index = 0;
-		for (int i = 0; i < stat.length; i++) {
-			stat[i] = 0;
-		}
+		liveChatUtil = new LiveChatUtil(2048);
+		util_thread = new Thread(liveChatUtil);
+		util_thread.start();
 		if (!liveRoomHandled) {
 			LivePanel.getInstance().log("###  正在处理房间号  ###");
 			LivePanel.getInstance().refreshUi();
 			if (!utilRoomNumber()) {
+				LivePanel.getInstance().onUtilRoomNumberFailed(2);
 				return;
 			}
 			LivePanel.getInstance().log("###  处理完毕，抓取已开始  ###");
 			LivePanel.getInstance().refreshUi();
 		}
-		while (Config.live_config.STATUS) {
-			JSONObject jsonObject = null;
-			String[] ct_temp = null;
-			int buffer = 0;
-			int new_chat_count = 0;
-			try {
-				jsonObject = new JSONObject(request());
-			} catch (JSONException | IOException e) {
-				LivePanel.getInstance().log("###############");
-				LivePanel.getInstance().log(e.getMessage());
-				LivePanel.getInstance().log("【发生异常】" + e.getClass().getName());
-				LivePanel.getInstance().log("###############");
-				LivePanel.getInstance().refreshUi();
-			}
-			JSONObject data = jsonObject.getJSONObject("data");
-			JSONArray room = data.getJSONArray("room");
-			LivePanel.getInstance().addTime();
-			tick: for (int i = 0; i < room.length(); i++) {
-				JSONObject chat_json = room.getJSONObject(i);
-				JSONObject check_info = chat_json.getJSONObject("check_info");
-				String ct = check_info.getString("ct");
-				String text = chat_json.getString("text");
-				if (i == 0) {
-					ct_temp = new String[room.length()];
-				}
-				if (prepared) {
-					for (int j = 0; j < ct_old.length; j++) {
-						// 判断弹幕是否相等
-						if (ct.equals(ct_old[j])) {
-							buffer++;
-							ct_temp[i] = ct;
-							continue tick;
-						}
-					}
-				}
-				if (i == 0) {
-					ct_old = new String[room.length()];
-				}
-				ct_temp[i] = ct;
-				Long time = check_info.getLong("ts");
-				// 如果弹幕的发送时间早于设定的开始时间，则该弹幕是历史弹幕，不抓取
-				if (time * 1000 < Config.live_config.START_TIME) {
-					LivePanel.getInstance().log("[历史弹幕，不记录]  " + text);
-					continue tick;
-				}
-				new_chat_count++;
-				String text2 = text.replace("<", "&lt;").replace("&", "&amp;");
-				// 字体颜色，弹幕转换工具Github上一搜一大堆
-				// 暂时只支持这几种，因为开发者翻遍F12也找不到控制弹幕颜色的字段在哪里（泪）
-				// 优先级：船员 > 年费老爷 > 月费老爷 > 普通
-				color_block: {
-					if (chat_json.getInt("guard_level") > 0) {
-						color.add(0xe33fff);// 紫色
-						break color_block;
-					}
-					if (chat_json.getInt("svip") == 1) {
-						color.add(0x66ccff);// 蓝色（天依色哦，刻在DNA里的RGB号）
-						break color_block;
-					}
-					if (chat_json.getInt("vip") == 1) {
-						color.add(0xff6868);// 红色
-						break color_block;
-					}
-					color.add(0xffffff);// 白色
-				}
-				chat.append(text2, chat_json.getInt("uid") + "", (float) (time - Config.live_config.START_TIME / 1000),
-						time);
-				total_json.put(chat_json);
-				if (first_run) {
-					LivePanel.getInstance().log("[缓冲区填充中]  " + text);
-				} else if (buffer == 0) {
-					LivePanel.getInstance().log("【警告 - 缓冲区" + buffer + "】  " + text);
-				} else {
-					LivePanel.getInstance().log("[缓冲区" + buffer + "]  " + text);
-				}
-			}
-			for (int i = 0; i < room.length(); i++) {
-				ct_old[i] = ct_temp[i];
-			}
-			if (!first_run && buffer == 0) {
-				if (Config.live_config.AUTO_DELAY && !first_run) {
-					if (Config.live_config.DELAY >= 4000) {
-						Config.live_config.DELAY -= 2000;
-						LivePanel.getInstance().log("###  延时已智能调低2000ms  ###");
-						LivePanel.getInstance().refreshDelayField();
-					} else if (Config.live_config.DELAY >= 2000) {
-						Config.live_config.DELAY -= 1000;
-						LivePanel.getInstance().log("###  延时已智能调低1000ms  ###");
-						LivePanel.getInstance().refreshDelayField();
-					} else if (Config.live_config.DELAY >= 1000) {
-						Config.live_config.DELAY -= 600;
-						LivePanel.getInstance().log("###  延时已智能调低600ms  ###");
-						LivePanel.getInstance().refreshDelayField();
-					} else if (Config.live_config.DELAY >= 200) {
-						Config.live_config.DELAY -= 200;
-						LivePanel.getInstance().log("###  延时已智能调低2000ms  ###");
-						LivePanel.getInstance().refreshDelayField();
-					} else {
-						Config.live_config.DELAY = 0;
-						LivePanel.getInstance().log("###  延时已智能设置为0  ###");
-						LivePanel.getInstance().refreshDelayField();
-					}
-				}
-			}
-			if (stat_index != stat.length - 1) {
-				stat[stat_index] = buffer;
-				stat_index++;
-			} else {
-				stat[stat_index] = buffer;
-				stat_index = 0;
-				if (Config.live_config.AUTO_DELAY && !first_run) {
-					int sum = 0;
-					for (int k = 0; k < stat.length; k++) {
-						sum += stat[k];
-					}
-					double average = (double) sum / stat.length;
-					if (average < 4.0) {
-						if (Config.live_config.DELAY >= 4000) {
-							Config.live_config.DELAY -= 1000;
-							LivePanel.getInstance().log("###  延时已智能调低1000ms  ###");
-							LivePanel.getInstance().refreshDelayField();
-						} else if (Config.live_config.DELAY >= 2000) {
-							Config.live_config.DELAY -= 500;
-							LivePanel.getInstance().log("###  延时已智能调低500ms  ###");
-							LivePanel.getInstance().refreshDelayField();
-						} else if (Config.live_config.DELAY >= 1000) {
-							Config.live_config.DELAY -= 300;
-							LivePanel.getInstance().log("###  延时已智能调低300ms  ###");
-							LivePanel.getInstance().refreshDelayField();
-						} else if (Config.live_config.DELAY >= 200) {
-							Config.live_config.DELAY -= 100;
-							LivePanel.getInstance().log("###  延时已智能调低100ms  ###");
-							LivePanel.getInstance().refreshDelayField();
-						} else {
-							Config.live_config.DELAY = 0;
-							LivePanel.getInstance().log("###  延时已智能设置为0  ###");
-							LivePanel.getInstance().refreshDelayField();
-						}
-					} else if (average > 7.5) {
-						Config.live_config.DELAY += (int) (Config.live_config.DELAY * 0.25 + 50);
-						LivePanel.getInstance().log("###  延时已智能调高（50ms + 25%）  ###");
-						LivePanel.getInstance().refreshDelayField();
-					}
-				}
-			}
-			LivePanel.getInstance().refreshLabel(new_chat_count, buffer, first_run);
-			buffer = 0;
-			prepared = true;
-			if (chat.getCount() > 9) {
-				first_run = false;
-			}
-			LivePanel.getInstance().refreshUi();
-			try {
-				Thread.sleep(Config.live_config.DELAY);
-			} catch (InterruptedException e) {
-				if (!Config.live_config.STATUS) {
-					LivePanel.getInstance().log("###  抓取已结束  ###");
+		if (Config.live_config.MULTI_THREAD) {
+			MultiThreadUtil multiThreadUtil = new MultiThreadUtil();
+			multiThreadUtil.init(this, (int) (Config.live_config.MAX_DELAY * 1.5));
+			multiThreadUtil.start();
+		} else {
+			while (Config.live_config.STATUS) {
+				try {
+					liveChatUtil.push(request());
+				} catch (IOException e) {
+					e.printStackTrace();
+					LivePanel.getInstance().log("###############");
+					LivePanel.getInstance().log(e.getMessage());
+					LivePanel.getInstance().log("【发生异常】" + e.getClass().getName());
+					LivePanel.getInstance().log("###############");
 					LivePanel.getInstance().refreshUi();
+				}
+				try {
+					Thread.sleep(Config.live_config.DELAY);
+				} catch (InterruptedException e) {
+					if (!Config.live_config.STATUS) {
+						LivePanel.getInstance().log("###  抓取已结束  ###");
+						LivePanel.getInstance().refreshUi();
+					}
 				}
 			}
 		}
+		// 清除中断状态
+		Thread.interrupted();
+		try {
+			util_thread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		class_.onChatUtilFinish();
 	}
 
 	/**
@@ -240,8 +105,8 @@ public class LiveChat implements Runnable {
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("POST");
 			conn.setDoOutput(true);
-			conn.setConnectTimeout(5000);
-			conn.setReadTimeout(5000);
+			conn.setConnectTimeout(500);
+			conn.setReadTimeout(500);
 			conn.getOutputStream().write(postDataBytes);
 			Reader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
 			StringBuilder sb = new StringBuilder();
@@ -287,7 +152,7 @@ public class LiveChat implements Runnable {
 	 * @return 弹幕
 	 */
 	public static Chat getChat() {
-		return chat;
+		return LiveChatUtil.getChat();
 	}
 
 	/**
@@ -296,11 +161,7 @@ public class LiveChat implements Runnable {
 	 * @return 颜色
 	 */
 	public static int[] getChatColor() {
-		int[] c = new int[color.size()];
-		for (int i = 0; i < c.length; i++) {
-			c[i] = color.get(i);
-		}
-		return c;
+		return LiveChatUtil.getChatColor();
 	}
 
 	/**
@@ -309,7 +170,7 @@ public class LiveChat implements Runnable {
 	 * @return json
 	 */
 	public static JSONArray getJSONArray() {
-		return total_json;
+		return LiveChatUtil.getJSONArray();
 	}
 
 	public static boolean utilRoomNumber() {
@@ -318,12 +179,14 @@ public class LiveChat implements Runnable {
 					"https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid=" + Config.live_config.ROOM);
 			String room = new JSONObject(json).getJSONObject("data").getString("roomid");
 			Config.live_config.ROOM = Integer.parseInt(room);
+			LivePanel.getInstance().setRoomNumber();
 		} catch (IOException | JSONException | NumberFormatException e) {
 			try {
 				String json = getDataFromServer(
 						"https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid=" + Config.live_config.ROOM);
 				int room = new JSONObject(json).getJSONObject("data").getInt("roomid");
 				Config.live_config.ROOM = room;
+				LivePanel.getInstance().setRoomNumber();
 			} catch (IOException | JSONException | NumberFormatException err) {
 				LivePanel.getInstance().log("###############");
 				LivePanel.getInstance().log(e.getMessage());
@@ -334,5 +197,28 @@ public class LiveChat implements Runnable {
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public void callback(String json) {
+		liveChatUtil.push(json);
+	}
+
+	public static boolean isLiveRoomHandled() {
+		return liveRoomHandled;
+	}
+
+	public static void setLiveRoomHandled(boolean liveRoomHandled) {
+		LiveChat.liveRoomHandled = liveRoomHandled;
+	}
+
+	public static void saveToXml(OnXmlUtilFinished c) {
+		boolean successful = OutputManager.saveToXml(LiveChatUtil.getChat(), LiveChatUtil.getChatColor());
+		c.onXmlUtilFinish(successful);
+	}
+
+	public static void saveToJson(OnJsonUtilFinished c) {
+		boolean successful = OutputManager.saveToJson(LiveChatUtil.getJSONArray());
+		c.onJsonUtilFinish(successful);
 	}
 }
