@@ -46,6 +46,7 @@ public class LiveChatUtil implements Runnable {
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
 		}
+		prevent = true;
 		long time1 = new Date().getTime();
 		while (Config.live_config.STATUS || prevent) {
 			if (prevent) {
