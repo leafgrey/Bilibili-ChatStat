@@ -43,8 +43,9 @@ public class RequestCookie extends JDialog {
 		textArea.setText("受哔哩哔哩安全策略的影响，爬取历史弹幕需要传入用户的登录信息。\n" + "请按照以下方法获取Cookie：\n" + "1. 浏览器打开哔哩哔哩，确保已登录账号，若没登录请登录。\n"
 				+ "2. 浏览器新建一个标签页，按F12打开开发者工具（如果你的浏览器按F12打不开开发者工具，请百度搜索进入开发者工具的方式）。\n"
 				+ "3. 在该标签页访问http://comment.bilibili.com/279786.xml\n"
-				+ "4. 在开发者工具中依次点击“Network/网络”、“279786.xml”，右边显示“Headers/头部”，拉到下面，在“Request Headers/请求头”中可以看到“Cookie”字段（以“_uuid=”开头），把“Cookie”的内容复制下来，粘贴到下面。\n"
-				+ "Cookie仅用于请求历史弹幕，开发者不收集任何信息（代码开源，有没有收集完全可以看得到）。\n" + "【警告】最好不要用大号！用大号的话账号没了不要找我！");
+				+ "4. 在开发者工具中依次点击“Network/网络”、“279786.xml”，右边显示“Headers/标头”，拉到下面，在“Request Headers/请求标头”中可以看到“Cookie”字段，把“Cookie”的内容复制下来，粘贴到下面。\n"
+				+ "Cookie仅用于请求历史弹幕，开发者不收集任何信息（代码开源，有没有收集完全可以看得到）。\n"
+				+ "【警告】如果你做大量爬取，建议使用小号。（开大号被封了不要找我，我也没办法帮你解封啊233）");
 
 		textField = new JTextField();
 		contentPanel.add(textField, BorderLayout.SOUTH);

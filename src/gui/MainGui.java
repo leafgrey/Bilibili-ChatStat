@@ -418,15 +418,14 @@ public class MainGui implements Runnable {
 			}
 		});
 		panel_uid.add(button_uid);
-		
+
 		check_historical = new JCheckBox("爬取历史弹幕（不勾选则爬取实时弹幕）");
 		check_historical.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if(!check_historical.isSelected()) {
+				if (!check_historical.isSelected()) {
 					Config.spider_config.HISTORICAL = false;
-				}
-				else {
+				} else {
 					check_historical.setSelected(false);
 					new RequestCookie();
 				}
@@ -452,6 +451,7 @@ public class MainGui implements Runnable {
 				button_import_2.setEnabled(false);
 				button_uid.setEnabled(false);
 				button_confirm.setEnabled(false);
+				check_historical.setEnabled(false);
 				spiderThread = new Thread(new Spider());
 				spiderThread.start();
 			}
@@ -1120,6 +1120,7 @@ public class MainGui implements Runnable {
 		field_uid.setEnabled(true);
 		button_uid.setEnabled(true);
 		txtFile = null;
+		check_historical.setEnabled(true);
 		button_confirm.setEnabled(true);
 		button_confirm.setText("确定配置，下一步");
 	}
@@ -1132,8 +1133,9 @@ public class MainGui implements Runnable {
 	public void setTxtFile(File file) {
 		txtFile = file;
 	}
+
 	public void setCheckSelected(boolean b) {
 		check_historical.setSelected(b);
 	}
-	
+
 }

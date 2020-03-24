@@ -495,10 +495,6 @@ public class Spider implements Runnable {
 		}
 	}
 
-	private int getHistoricalDanmakuAmount(JSONObject json) throws JSONException {
-		return json.getJSONObject("stat").getInt("danmaku");
-	}
-
 	private Calendar getPubDate(JSONObject json) throws JSONException {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTimeInMillis(json.getLong("pubdate") * 1000);
@@ -536,12 +532,13 @@ public class Spider implements Runnable {
 				for (int i = 0; i < array.length(); i++) {
 					list.add(array.getString(i));
 				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
 				if (simpleDateFormat.format(new Date(pubDate.getTimeInMillis())).equals(today)) {
 					break;
 				}
 				pubDate.add(Calendar.MONTH, 1);
-			} catch (Exception e) {
-				// TODO
 			}
 		}
 		return list.toArray(new String[0]);
@@ -553,11 +550,56 @@ public class Spider implements Runnable {
 	 */
 	private String getChatByCid(String cid, JSONObject json) throws ParseException, IOException {
 		if (Config.spider_config.HISTORICAL) {
-			int amount = getHistoricalDanmakuAmount(json);
-			MainGui.getInstance().log("历史弹幕总数为" + amount);
+			MainGui.getInstance().log("正在获取日期列表");
 			String[] date_list = getDateList(cid, getPubDate(json));
-			handle(cid, date_list, new HistoricalChat[date_list.length], 0, date_list.length - 1);
-			return "";
+			MainGui.getInstance().log("已获取日期列表，可爬取的天数为" + date_list.length);
+			if (date_list.length == 0) {
+				return "<i><chatserver>chat.bilibili.com</chatserver><chatid>" + cid
+						+ "</chatid><mission>0</mission><maxlimit>2147483647</maxlimit><state>0</state><real_name>0</real_name></i>";
+			} else if (date_list.length == 1) {
+				HistoricalChat chat = new HistoricalChat();
+				MainGui.getInstance().log("正在请求" + date_list[0] + "的历史弹幕");
+				try {
+					chat.append(requestWithCookie(cid, date_list[0]));
+				} catch (Exception e) {
+					e.printStackTrace();
+					MainGui.getInstance().log("【警告】" + date_list[0] + "的历史弹幕请求失败");
+					return "<i><chatserver>chat.bilibili.com</chatserver><chatid>" + cid
+							+ "</chatid><mission>0</mission><maxlimit>2147483647</maxlimit><state>0</state><real_name>0</real_name></i>";
+				}
+				MainGui.getInstance().log("历史弹幕爬取完毕，准备合并弹幕");
+				StringBuilder sb = new StringBuilder("<i><chatserver>chat.bilibili.com</chatserver><chatid>" + cid
+						+ "</chatid><mission>0</mission><maxlimit>2147483647</maxlimit><state>0</state><real_name>0</real_name>");
+				for (int i = 0; i < chat.getIds().length; i++) {
+					sb.append(chat.getChats()[i]);
+				}
+				MainGui.getInstance().log("成功，历史弹幕总数为" + chat.getIds().length);
+				sb.append("</i>");
+				return sb.toString();
+			}
+			HistoricalChat[] historicalChats = new HistoricalChat[date_list.length];
+			handle(cid, date_list, historicalChats, 0, date_list.length - 1);
+			MainGui.getInstance().log("历史弹幕爬取完毕，准备合并弹幕");
+			StringBuilder sb = new StringBuilder("<i><chatserver>chat.bilibili.com</chatserver><chatid>" + cid
+					+ "</chatid><mission>0</mission><maxlimit>2147483647</maxlimit><state>0</state><real_name>0</real_name>");
+			ArrayList<Long> temp = new ArrayList<>();
+			for (int i = 0; i < historicalChats.length; i++) {
+				if (historicalChats[i] == null) {
+					continue;
+				}
+				tick: for (int j = historicalChats[i].getIds().length - 1; j > -1; j--) {
+					for (int k = 0; k < temp.size(); k++) {
+						if (historicalChats[i].getIds()[j] == temp.get(k)) {
+							continue tick;
+						}
+					}
+					temp.add(historicalChats[i].getIds()[j]);
+					sb.append(historicalChats[i].getChats()[j]);
+				}
+			}
+			MainGui.getInstance().log("成功，历史弹幕总数为" + temp.size());
+			sb.append("</i>");
+			return sb.toString();
 		} else {
 			CloseableHttpClient client = HttpClients.createDefault();
 			HttpGet httpGet = new HttpGet("https://comment.bilibili.com/" + cid + ".xml");
@@ -569,19 +611,33 @@ public class Spider implements Runnable {
 		}
 	}
 
-	private void handle(String cid, String[] date, HistoricalChat[] historicalChats, int min_index, int max_index)
-			throws ParseException, IOException {
+	private void handle(String cid, String[] date, HistoricalChat[] historicalChats, int min_index, int max_index) {
 		if (historicalChats[min_index] == null) {
 			HistoricalChat chat = new HistoricalChat();
-			chat.append(requestWithCookie(cid, date[min_index]));
-			System.out.println("请求" + min_index);
+			MainGui.getInstance().log("正在请求" + date[min_index] + "的历史弹幕");
+			try {
+				chat.append(requestWithCookie(cid, date[min_index]));
+			} catch (Exception e) {
+				e.printStackTrace();
+				MainGui.getInstance().log("【警告】" + date[min_index] + "的历史弹幕请求失败");
+				return;
+			}
 			historicalChats[min_index] = chat;
 		}
 		if (historicalChats[max_index] == null) {
 			HistoricalChat chat = new HistoricalChat();
-			chat.append(requestWithCookie(cid, date[max_index]));
-			System.out.println("请求" + max_index);
+			MainGui.getInstance().log("正在请求" + date[max_index] + "的历史弹幕");
+			try {
+				chat.append(requestWithCookie(cid, date[max_index]));
+			} catch (Exception e) {
+				e.printStackTrace();
+				MainGui.getInstance().log("【警告】" + date[min_index] + "的历史弹幕请求失败");
+				return;
+			}
 			historicalChats[max_index] = chat;
+		}
+		if (historicalChats[max_index].getIds().length == 0) {
+			return;
 		}
 		if (historicalChats[min_index].isLowerThan(historicalChats[max_index])) {
 			if (max_index - min_index > 1) {
