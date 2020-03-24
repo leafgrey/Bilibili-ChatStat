@@ -164,7 +164,7 @@ public class XmlLoader {
 	 * @return Docum
 	 * @throws InterruptedException Ïß³Ì±»×è¶Ï
 	 */
-	private static Document loadFromString(String str) throws InterruptedException {
+	static Document loadFromString(String str) throws InterruptedException {
 		Document document = null;
 		try {
 			document = DocumentHelper.parseText(str);

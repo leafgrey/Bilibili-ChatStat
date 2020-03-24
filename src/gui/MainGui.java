@@ -46,6 +46,7 @@ import script.CsvReader;
 import script.OutputManager;
 import script.RunScript;
 import script.Spider;
+import javax.swing.JCheckBox;
 
 /**
  * 主窗口
@@ -119,6 +120,7 @@ public class MainGui implements Runnable {
 	private ImageIcon icon;
 	private JButton button_clear;
 	private boolean long_clicked = false;
+	private JCheckBox check_historical;
 
 	/**
 	 * 主方法
@@ -416,6 +418,21 @@ public class MainGui implements Runnable {
 			}
 		});
 		panel_uid.add(button_uid);
+		
+		check_historical = new JCheckBox("爬取历史弹幕（不勾选则爬取实时弹幕）");
+		check_historical.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(!check_historical.isSelected()) {
+					Config.spider_config.HISTORICAL = false;
+				}
+				else {
+					check_historical.setSelected(false);
+					new RequestCookie();
+				}
+			}
+		});
+		panel_info.add(check_historical);
 
 		panel_confirm = new JPanel();
 		FlowLayout flowLayout_5 = (FlowLayout) panel_confirm.getLayout();
@@ -1115,4 +1132,8 @@ public class MainGui implements Runnable {
 	public void setTxtFile(File file) {
 		txtFile = file;
 	}
+	public void setCheckSelected(boolean b) {
+		check_historical.setSelected(b);
+	}
+	
 }

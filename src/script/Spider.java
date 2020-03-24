@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -83,7 +84,7 @@ public class Spider implements Runnable {
 						confirmed = false;
 						String chatStr = null;
 						try {
-							chatStr = getChatByCid(pages[0]);
+							chatStr = getChatByCid(pages[0], data);
 							MainGui.getInstance().log("弹幕文件获取完毕");
 						} catch (ParseException e1) {
 							MainGui.getInstance().log("【警告】弹幕爬取失败： " + e1.toString());
@@ -127,7 +128,7 @@ public class Spider implements Runnable {
 						for (int i = 0; i < pages.length; i++) {
 							String chatStr = null;
 							try {
-								chatStr = getChatByCid(pages[i]);
+								chatStr = getChatByCid(pages[i], data);
 								MainGui.getInstance().log("P" + (i + 1) + " （共" + pages.length + "P）弹幕爬取完毕");
 							} catch (ParseException e1) {
 								MainGui.getInstance()
@@ -209,7 +210,7 @@ public class Spider implements Runnable {
 							for (int j = 0; j < pages.length; j++) {
 								String chatStr = null;
 								try {
-									chatStr = getChatByCid(pages[j]);
+									chatStr = getChatByCid(pages[j], data);
 								} catch (ParseException e1) {
 									MainGui.getInstance().log(
 											"【警告】P" + (j + 1) + " （共" + pages.length + "P）弹幕爬取失败： " + e1.toString());
@@ -346,7 +347,7 @@ public class Spider implements Runnable {
 							for (int j = 0; j < pages.length; j++) {
 								String chatStr = null;
 								try {
-									chatStr = getChatByCid(pages[j]);
+									chatStr = getChatByCid(pages[j], data);
 								} catch (ParseException e1) {
 									MainGui.getInstance().log(
 											"【警告】P" + (j + 1) + " （共" + pages.length + "P）弹幕爬取失败： " + e1.toString());
@@ -458,10 +459,9 @@ public class Spider implements Runnable {
 
 	private JSONObject getVideoInfoJson(String av) throws IOException, JSONException {
 		String text;
-		if(av.startsWith("AV")) {
+		if (av.startsWith("AV")) {
 			text = getDataFromServer("https://api.bilibili.com/x/web-interface/view?aid=" + av.replace("AV", ""));
-		}
-		else{
+		} else {
 			text = getDataFromServer("https://api.bilibili.com/x/web-interface/view?bvid=" + av);
 		}
 		return new JSONObject(text).getJSONObject("data");
@@ -495,13 +495,118 @@ public class Spider implements Runnable {
 		}
 	}
 
+	private int getHistoricalDanmakuAmount(JSONObject json) throws JSONException {
+		return json.getJSONObject("stat").getInt("danmaku");
+	}
+
+	private Calendar getPubDate(JSONObject json) throws JSONException {
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTimeInMillis(json.getLong("pubdate") * 1000);
+		return calendar;
+	}
+
+	private String[] getDateList(String cid, Calendar pubDate) {
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM");
+		String today = simpleDateFormat.format(new Date());
+		ArrayList<String> list = new ArrayList<>();
+		while (true) {
+			try {
+				CloseableHttpClient client = HttpClients.createDefault();
+				HttpGet httpGet = new HttpGet("https://api.bilibili.com/x/v2/dm/history/index?type=1&oid=" + cid
+						+ "&month=" + simpleDateFormat.format(new Date(pubDate.getTimeInMillis())));
+				httpGet.addHeader("Host", "api.bilibili.com");
+				httpGet.addHeader("Connection", "keep-alive");
+				httpGet.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+				httpGet.addHeader("Sec-Fetch-Dest", "empty");
+				httpGet.addHeader("User-Agent",
+						"Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36");
+				httpGet.addHeader("Origin", "https://www.bilibili.com");
+				httpGet.addHeader("Sec-Fetch-Site", "same-site");
+				httpGet.addHeader("Sec-Fetch-Mode", "cors");
+				httpGet.addHeader("Referer", "https://www.bilibili.com/video/");
+				httpGet.addHeader("Accept-Encoding", "gzip, deflate, br");
+				httpGet.addHeader("Accept-Language", "zh-CN,zh;q=0.9");
+				httpGet.addHeader("Cookie", Config.spider_config.COOKIE);
+				CloseableHttpResponse response = client.execute(httpGet);
+				HttpEntity entity = response.getEntity();
+				String string = EntityUtils.toString(entity);
+				response.close();
+				JSONObject jsonObject = new JSONObject(string);
+				JSONArray array = jsonObject.getJSONArray("data");
+				for (int i = 0; i < array.length(); i++) {
+					list.add(array.getString(i));
+				}
+				if (simpleDateFormat.format(new Date(pubDate.getTimeInMillis())).equals(today)) {
+					break;
+				}
+				pubDate.add(Calendar.MONTH, 1);
+			} catch (Exception e) {
+				// TODO
+			}
+		}
+		return list.toArray(new String[0]);
+	}
+
 	/*
 	 * 开发者诉苦： 哔哩哔哩弹幕xml是压缩过了的，浏览器访问xml文件会自动解压从而获得正确的文件；而跑程序则不会。
 	 * TMD这个问题困扰我整整两天，敲代码到半夜，我甚至想过直接搞解压算法，直到最后一刻才想起用第三方库，成功爬取的时候（爷）真是老泪纵横23333
 	 */
-	private String getChatByCid(String cid) throws ParseException, IOException {
+	private String getChatByCid(String cid, JSONObject json) throws ParseException, IOException {
+		if (Config.spider_config.HISTORICAL) {
+			int amount = getHistoricalDanmakuAmount(json);
+			MainGui.getInstance().log("历史弹幕总数为" + amount);
+			String[] date_list = getDateList(cid, getPubDate(json));
+			handle(cid, date_list, new HistoricalChat[date_list.length], 0, date_list.length - 1);
+			return "";
+		} else {
+			CloseableHttpClient client = HttpClients.createDefault();
+			HttpGet httpGet = new HttpGet("https://comment.bilibili.com/" + cid + ".xml");
+			CloseableHttpResponse response = client.execute(httpGet);
+			HttpEntity entity = response.getEntity();
+			String string = EntityUtils.toString(entity);
+			response.close();
+			return string;
+		}
+	}
+
+	private void handle(String cid, String[] date, HistoricalChat[] historicalChats, int min_index, int max_index)
+			throws ParseException, IOException {
+		if (historicalChats[min_index] == null) {
+			HistoricalChat chat = new HistoricalChat();
+			chat.append(requestWithCookie(cid, date[min_index]));
+			System.out.println("请求" + min_index);
+			historicalChats[min_index] = chat;
+		}
+		if (historicalChats[max_index] == null) {
+			HistoricalChat chat = new HistoricalChat();
+			chat.append(requestWithCookie(cid, date[max_index]));
+			System.out.println("请求" + max_index);
+			historicalChats[max_index] = chat;
+		}
+		if (historicalChats[min_index].isLowerThan(historicalChats[max_index])) {
+			if (max_index - min_index > 1) {
+				handle(cid, date, historicalChats, (min_index + max_index) / 2, max_index);
+				handle(cid, date, historicalChats, min_index, (min_index + max_index) / 2);
+			}
+		}
+	}
+
+	private String requestWithCookie(String cid, String date) throws IOException, ParseException {
 		CloseableHttpClient client = HttpClients.createDefault();
-		HttpGet httpGet = new HttpGet("https://comment.bilibili.com/" + cid + ".xml");
+		HttpGet httpGet = new HttpGet("https://api.bilibili.com/x/v2/dm/history?type=1&oid=" + cid + "&date=" + date);
+		httpGet.addHeader("Host", "api.bilibili.com");
+		httpGet.addHeader("Connection", "keep-alive");
+		httpGet.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+		httpGet.addHeader("Sec-Fetch-Dest", "empty");
+		httpGet.addHeader("User-Agent",
+				"Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36");
+		httpGet.addHeader("Origin", "https://www.bilibili.com");
+		httpGet.addHeader("Sec-Fetch-Site", "same-site");
+		httpGet.addHeader("Sec-Fetch-Mode", "cors");
+		httpGet.addHeader("Referer", "https://www.bilibili.com/video/");
+		httpGet.addHeader("Accept-Encoding", "gzip, deflate, br");
+		httpGet.addHeader("Accept-Language", "zh-CN,zh;q=0.9");
+		httpGet.addHeader("Cookie", Config.spider_config.COOKIE);
 		CloseableHttpResponse response = client.execute(httpGet);
 		HttpEntity entity = response.getEntity();
 		String string = EntityUtils.toString(entity);

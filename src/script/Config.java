@@ -37,6 +37,8 @@ public class Config {
 		public static int mode = 0;// 模式，0为爬取单视频，1为爬取多视频，2为爬取指定up主的全部视频
 		public static String[] avs;// av/bv号列表
 		public static int uid = 0;// UP主的UID
+		public static boolean HISTORICAL = false;//历史弹幕
+		public static String COOKIE = "";//爬历史弹幕要用到的Cookie
 	}
 
 	// 直播间抓取弹幕配置
