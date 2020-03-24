@@ -43,9 +43,9 @@ public class LiveChat implements Runnable, MultiThreadOperation {
 	 */
 	@Override
 	public void run() {
+		Config.live_config.STATUS = true;
 		liveChatUtil = new LiveChatUtil(2048);
 		util_thread = new Thread(liveChatUtil);
-		util_thread.start();
 		if (!liveRoomHandled) {
 			LivePanel.getInstance().log("###  正在处理房间号  ###");
 			LivePanel.getInstance().refreshUi();
@@ -56,11 +56,14 @@ public class LiveChat implements Runnable, MultiThreadOperation {
 			LivePanel.getInstance().log("###  处理完毕，抓取已开始  ###");
 			LivePanel.getInstance().refreshUi();
 		}
+		util_thread.start();
 		if (Config.live_config.MULTI_THREAD) {
+			Config.live_config.STATUS = true;
 			MultiThreadUtil multiThreadUtil = new MultiThreadUtil();
 			multiThreadUtil.init(this, (int) (Config.live_config.MAX_DELAY * 1.5));
 			multiThreadUtil.start();
 		} else {
+			Config.live_config.STATUS = true;
 			while (Config.live_config.STATUS) {
 				try {
 					liveChatUtil.push(request());

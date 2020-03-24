@@ -1,6 +1,7 @@
 package script;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,6 +21,7 @@ public class LiveChatUtil implements Runnable {
 	private int cursor = 0;
 	private int size;
 	private int index = 0;
+	private boolean prevent = true;// 为防止各种玄学bug，进入while循环一段时间后将其设置为false
 
 	public LiveChatUtil(int size) {
 		this.size = size;
@@ -38,7 +40,19 @@ public class LiveChatUtil implements Runnable {
 		for (int i = 0; i < stat.length; i++) {
 			stat[i] = 0;
 		}
-		while (Config.live_config.STATUS) {
+		Config.live_config.STATUS = true;
+		try {
+			Thread.sleep(100);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		long time1 = new Date().getTime();
+		while (Config.live_config.STATUS || prevent) {
+			if (prevent) {
+				if (new Date().getTime() - time1 > 2000) {
+					prevent = false;
+				}
+			}
 			if (index >= list.size() - 1) {
 				continue;
 			}
