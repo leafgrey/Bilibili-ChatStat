@@ -60,7 +60,9 @@ public class Spider implements Runnable {
 					return;
 				}
 				if (pages.length == 1) {
-					FileManager.showFileSaveDialog(null, getUpName(data) + " - " + title, 2);
+					if (Config.spider_config.HISTORICAL) {
+						FileManager.showFileSaveDialog(null, "[历史弹幕] " + getUpName(data) + " - " + title, 2);
+					}
 					if (OutputManager.getFile() == null) {
 						MainGui.getInstance().log("您未选择输出文件，爬取已终止");
 						MainGui.getInstance().setEnabled(true);
@@ -137,9 +139,17 @@ public class Spider implements Runnable {
 								e1.printStackTrace();
 								randomSleep();
 							}
-							OutputManager.saveToXml(chatStr,
-									OutputManager.getFile().getPath() + "\\" + OutputManager.replaceFileName(name
-											+ " - " + title + " （P" + (i + 1) + "：" + getPageName(data, i) + "）.xml"));
+							if (Config.spider_config.HISTORICAL) {
+								OutputManager.saveToXml(chatStr,
+										OutputManager.getFile().getPath() + "\\" + "[历史弹幕] "
+												+ OutputManager.replaceFileName(name + " - " + title + " （P" + (i + 1)
+														+ "：" + getPageName(data, i) + "）.xml"));
+							} else {
+								OutputManager.saveToXml(chatStr,
+										OutputManager.getFile().getPath() + "\\"
+												+ OutputManager.replaceFileName(name + " - " + title + " （P" + (i + 1)
+														+ "：" + getPageName(data, i) + "）.xml"));
+							}
 							randomSleep();
 						}
 						OutputManager.setFile(null);
@@ -220,14 +230,27 @@ public class Spider implements Runnable {
 									continue;
 								}
 								if (pages.length == 1) {
-									OutputManager.saveToXml(chatStr, OutputManager.getFile().getPath() + "\\"
-											+ OutputManager.replaceFileName(name + " - " + title + ".xml"));
+									if (Config.spider_config.HISTORICAL) {
+										OutputManager.saveToXml(chatStr,
+												OutputManager.getFile().getPath() + "\\" + "[历史弹幕] "
+														+ OutputManager.replaceFileName(name + " - " + title + ".xml"));
+									} else {
+										OutputManager.saveToXml(chatStr, OutputManager.getFile().getPath() + "\\"
+												+ OutputManager.replaceFileName(name + " - " + title + ".xml"));
+									}
 									MainGui.getInstance().log("第 " + (i + 1) + " / " + avs.length + " 个视频爬取完毕");
 								} else {
-									OutputManager.saveToXml(chatStr,
-											OutputManager.getFile().getPath() + "\\"
-													+ OutputManager.replaceFileName(name + " - " + title + " （P"
-															+ (j + 1) + "：" + getPageName(data, j) + "）.xml"));
+									if (Config.spider_config.HISTORICAL) {
+										OutputManager.saveToXml(chatStr,
+												OutputManager.getFile().getPath() + "\\" + "[历史弹幕] "
+														+ OutputManager.replaceFileName(name + " - " + title + " （P"
+																+ (j + 1) + "：" + getPageName(data, j) + "）.xml"));
+									} else {
+										OutputManager.saveToXml(chatStr,
+												OutputManager.getFile().getPath() + "\\"
+														+ OutputManager.replaceFileName(name + " - " + title + " （P"
+																+ (j + 1) + "：" + getPageName(data, j) + "）.xml"));
+									}
 									MainGui.getInstance().log("第 " + (i + 1) + " / " + avs.length + " 个视频（P" + (j + 1)
 											+ " / 共" + pages.length + "P）爬取完毕");
 								}
@@ -287,7 +310,11 @@ public class Spider implements Runnable {
 					confirmed = false;
 					SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 					String date = format.format(new Date());
-					FileManager.showFileSaveDialog(null, up.name + " - " + date + "全部视频弹幕", 3);
+					if (Config.spider_config.HISTORICAL) {
+						FileManager.showFileSaveDialog(null, up.name + " - " + date + "全部视频历史弹幕", 3);
+					} else {
+						FileManager.showFileSaveDialog(null, up.name + " - " + date + "全部视频实时弹幕", 3);
+					}
 					if (OutputManager.getFile() == null) {
 						FileManager.deleteTempDir();
 						MainGui.getInstance().log("您未选择输出目录，爬取已终止");
@@ -501,11 +528,19 @@ public class Spider implements Runnable {
 		return calendar;
 	}
 
+	/**
+	 * 不建议使用这个方法获取日期列表，因为频繁请求服务器不返回数据。事实上不在列表中的日期也可以请求到弹幕。
+	 */
+	@SuppressWarnings("unused")
+	@Deprecated
 	private String[] getDateList(String cid, Calendar pubDate) {
 		SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM");
 		String today = simpleDateFormat.format(new Date());
 		ArrayList<String> list = new ArrayList<>();
+		boolean retry = true;
+		int delay = 100;
 		while (true) {
+			int code = -1000;
 			try {
 				CloseableHttpClient client = HttpClients.createDefault();
 				HttpGet httpGet = new HttpGet("https://api.bilibili.com/x/v2/dm/history/index?type=1&oid=" + cid
@@ -528,17 +563,51 @@ public class Spider implements Runnable {
 				String string = EntityUtils.toString(entity);
 				response.close();
 				JSONObject jsonObject = new JSONObject(string);
+				code = jsonObject.getInt("code");
 				JSONArray array = jsonObject.getJSONArray("data");
 				for (int i = 0; i < array.length(); i++) {
 					list.add(array.getString(i));
 				}
+				retry = true;
 			} catch (Exception e) {
 				e.printStackTrace();
+				if (code == 0) {
+					// code为0表示请求成功，该月没有可爬取的日期，自动跳过
+				} else if (code == -503 || code == -509) {
+					if (delay < 10000) {
+						delay += 100;
+						MainGui.getInstance().log("（错误码" + code + "）请求过于频繁，已调整请求间隔");
+					} else {
+						MainGui.getInstance().log("（错误码" + code + "）请求过于频繁，将在10s后重试");
+					}
+					pubDate.add(Calendar.MONTH, -1);
+				} else {
+					if (retry) {
+						MainGui.getInstance().log("（错误码" + code + "）"
+								+ simpleDateFormat.format(new Date(pubDate.getTimeInMillis())) + "的可爬取日期列表请求失败，将重试一次");
+						pubDate.add(Calendar.MONTH, -1);
+						retry = false;
+						try {
+							Thread.sleep(1900);
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
+					} else {
+						retry = true;
+						MainGui.getInstance().log("（错误码" + code + "）"
+								+ simpleDateFormat.format(new Date(pubDate.getTimeInMillis())) + "的可爬取日期列表请求失败，已放弃");
+					}
+				}
 			} finally {
 				if (simpleDateFormat.format(new Date(pubDate.getTimeInMillis())).equals(today)) {
 					break;
 				}
 				pubDate.add(Calendar.MONTH, 1);
+				try {
+					Thread.sleep(delay);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 		return list.toArray(new String[0]);
@@ -550,24 +619,41 @@ public class Spider implements Runnable {
 	 */
 	private String getChatByCid(String cid, JSONObject json) throws ParseException, IOException {
 		if (Config.spider_config.HISTORICAL) {
-			MainGui.getInstance().log("正在获取日期列表");
-			String[] date_list = getDateList(cid, getPubDate(json));
+			Calendar calendar = getPubDate(json);
+			ArrayList<String> arrayList = new ArrayList<>();
+			SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			String today = simpleDateFormat.format(new Date());
+			while (true) {
+				String date = simpleDateFormat.format(new Date(calendar.getTimeInMillis()));
+				arrayList.add(date);
+				if (date.equals(today)) {
+					break;
+				}
+				calendar.add(Calendar.DATE, 1);
+			}
+			String[] date_list = arrayList.toArray(new String[0]);
 			MainGui.getInstance().log("已获取日期列表，可爬取的天数为" + date_list.length);
 			if (date_list.length == 0) {
+				MainGui.getInstance().log("【警告】无法请求到任何弹幕");
 				return "<i><chatserver>chat.bilibili.com</chatserver><chatid>" + cid
 						+ "</chatid><mission>0</mission><maxlimit>2147483647</maxlimit><state>0</state><real_name>0</real_name></i>";
 			} else if (date_list.length == 1) {
+				MainGui.getInstance().log("视频是今天发布的，已自动转为爬取实时弹幕");
+				CloseableHttpClient client = HttpClients.createDefault();
+				HttpGet httpGet = new HttpGet("https://comment.bilibili.com/" + cid + ".xml");
+				CloseableHttpResponse response = client.execute(httpGet);
+				HttpEntity entity = response.getEntity();
+				String string = EntityUtils.toString(entity);
+				response.close();
 				HistoricalChat chat = new HistoricalChat();
-				MainGui.getInstance().log("正在请求" + date_list[0] + "的历史弹幕");
 				try {
-					chat.append(requestWithCookie(cid, date_list[0]));
-				} catch (Exception e) {
+					chat.append(string);
+				} catch (NumberFormatException | InterruptedException e) {
 					e.printStackTrace();
-					MainGui.getInstance().log("【警告】" + date_list[0] + "的历史弹幕请求失败");
+					MainGui.getInstance().log("【警告】实时弹幕获取失败");
 					return "<i><chatserver>chat.bilibili.com</chatserver><chatid>" + cid
 							+ "</chatid><mission>0</mission><maxlimit>2147483647</maxlimit><state>0</state><real_name>0</real_name></i>";
 				}
-				MainGui.getInstance().log("历史弹幕爬取完毕，准备合并弹幕");
 				StringBuilder sb = new StringBuilder("<i><chatserver>chat.bilibili.com</chatserver><chatid>" + cid
 						+ "</chatid><mission>0</mission><maxlimit>2147483647</maxlimit><state>0</state><real_name>0</real_name>");
 				for (int i = 0; i < chat.getIds().length; i++) {
@@ -579,6 +665,21 @@ public class Spider implements Runnable {
 			}
 			HistoricalChat[] historicalChats = new HistoricalChat[date_list.length];
 			handle(cid, date_list, historicalChats, 0, date_list.length - 1);
+			CloseableHttpClient client = HttpClients.createDefault();
+			HttpGet httpGet = new HttpGet("https://comment.bilibili.com/" + cid + ".xml");
+			CloseableHttpResponse response = client.execute(httpGet);
+			HttpEntity entity = response.getEntity();
+			String string = EntityUtils.toString(entity);
+			response.close();
+			HistoricalChat chat = new HistoricalChat();
+			try {
+				chat.append(string);
+				MainGui.getInstance().log("实时弹幕请求成功");
+			} catch (NumberFormatException | InterruptedException e) {
+				e.printStackTrace();
+				MainGui.getInstance().log("【警告】实时弹幕获取失败");
+				chat = null;
+			}
 			MainGui.getInstance().log("历史弹幕爬取完毕，准备合并弹幕");
 			StringBuilder sb = new StringBuilder("<i><chatserver>chat.bilibili.com</chatserver><chatid>" + cid
 					+ "</chatid><mission>0</mission><maxlimit>2147483647</maxlimit><state>0</state><real_name>0</real_name>");
@@ -595,6 +696,17 @@ public class Spider implements Runnable {
 					}
 					temp.add(historicalChats[i].getIds()[j]);
 					sb.append(historicalChats[i].getChats()[j]);
+				}
+			}
+			if (chat != null) {
+				tick: for (int j = 0; j < chat.getIds().length; j++) {
+					for (int k = 0; k < temp.size(); k++) {
+						if (chat.getIds()[j] == temp.get(k)) {
+							continue tick;
+						}
+					}
+					temp.add(chat.getIds()[j]);
+					sb.append(chat.getChats()[j]);
 				}
 			}
 			MainGui.getInstance().log("成功，历史弹幕总数为" + temp.size());
@@ -619,8 +731,15 @@ public class Spider implements Runnable {
 				chat.append(requestWithCookie(cid, date[min_index]));
 			} catch (Exception e) {
 				e.printStackTrace();
-				MainGui.getInstance().log("【警告】" + date[min_index] + "的历史弹幕请求失败");
-				return;
+				MainGui.getInstance().log("【警告】" + date[min_index] + "的历史弹幕请求失败，将在10秒后重试一次");
+				try {
+					Thread.sleep(10000);
+					chat.append(requestWithCookie(cid, date[min_index]));
+				} catch (Exception e1) {
+					e1.printStackTrace();
+					MainGui.getInstance().log("【警告】" + date[min_index] + "的历史弹幕请求失败，已放弃");
+					return;
+				}
 			}
 			historicalChats[min_index] = chat;
 		}
@@ -631,8 +750,15 @@ public class Spider implements Runnable {
 				chat.append(requestWithCookie(cid, date[max_index]));
 			} catch (Exception e) {
 				e.printStackTrace();
-				MainGui.getInstance().log("【警告】" + date[min_index] + "的历史弹幕请求失败");
-				return;
+				MainGui.getInstance().log("【警告】" + date[max_index] + "的历史弹幕请求失败，将在10秒后重试一次");
+				try {
+					Thread.sleep(10000);
+					chat.append(requestWithCookie(cid, date[max_index]));
+				} catch (Exception e1) {
+					e1.printStackTrace();
+					MainGui.getInstance().log("【警告】" + date[max_index] + "的历史弹幕请求失败，已放弃");
+					return;
+				}
 			}
 			historicalChats[max_index] = chat;
 		}
