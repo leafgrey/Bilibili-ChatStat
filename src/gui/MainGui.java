@@ -819,7 +819,7 @@ public class MainGui implements Runnable {
 
 		south_panel.add(button_start, BorderLayout.EAST);
 
-		File file = new File(new File("").getAbsolutePath() + "\\" + "ChatStat.csv");
+		File file = new File(new File("").getAbsolutePath() + File.separator + "ChatStat.csv");
 		try {
 			if (file.exists()) {
 				CsvReader csvReader = new CsvReader(file);
@@ -875,7 +875,7 @@ public class MainGui implements Runnable {
 					list1.add(Config.ADVANCED_MATCH_SET[i][0]);
 					list2.add(Config.ADVANCED_MATCH_SET[i][1]);
 				}
-				OutputManager.setFile(new File(new File("").getAbsolutePath() + "\\" + "ChatStat.csv"));
+				OutputManager.setFile(new File(new File("").getAbsolutePath() + File.separator + "ChatStat.csv"));
 				OutputManager.saveToCsv(null, new ArrayList[] { list1, list2 }, false);
 				OutputManager.setFile(null);
 				status = 2;
@@ -890,7 +890,7 @@ public class MainGui implements Runnable {
 				list1.add(Config.ADVANCED_MATCH_SET[i][0]);
 				list2.add(Config.ADVANCED_MATCH_SET[i][1]);
 			}
-			OutputManager.setFile(new File(new File("").getAbsolutePath() + "\\" + "ChatStat.csv"));
+			OutputManager.setFile(new File(new File("").getAbsolutePath() + File.separator + "ChatStat.csv"));
 			try {
 				OutputManager.saveToCsv(null, new ArrayList[] { list1, list2 }, false);
 			} catch (InterruptedException e1) {

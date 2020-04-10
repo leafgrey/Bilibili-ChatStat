@@ -1,6 +1,7 @@
 package script;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -141,12 +142,12 @@ public class Spider implements Runnable {
 							}
 							if (Config.spider_config.HISTORICAL) {
 								OutputManager.saveToXml(chatStr,
-										OutputManager.getFile().getPath() + "\\" + "[历史弹幕] "
+										OutputManager.getFile().getPath() + File.separator + "[历史弹幕] "
 												+ OutputManager.replaceFileName(name + " - " + title + " （P" + (i + 1)
 														+ "：" + getPageName(data, i) + "）.xml"));
 							} else {
 								OutputManager.saveToXml(chatStr,
-										OutputManager.getFile().getPath() + "\\"
+										OutputManager.getFile().getPath() + File.separator
 												+ OutputManager.replaceFileName(name + " - " + title + " （P" + (i + 1)
 														+ "：" + getPageName(data, i) + "）.xml"));
 							}
@@ -232,22 +233,22 @@ public class Spider implements Runnable {
 								if (pages.length == 1) {
 									if (Config.spider_config.HISTORICAL) {
 										OutputManager.saveToXml(chatStr,
-												OutputManager.getFile().getPath() + "\\" + "[历史弹幕] "
+												OutputManager.getFile().getPath() + File.separator + "[历史弹幕] "
 														+ OutputManager.replaceFileName(name + " - " + title + ".xml"));
 									} else {
-										OutputManager.saveToXml(chatStr, OutputManager.getFile().getPath() + "\\"
+										OutputManager.saveToXml(chatStr, OutputManager.getFile().getPath() + File.separator
 												+ OutputManager.replaceFileName(name + " - " + title + ".xml"));
 									}
 									MainGui.getInstance().log("第 " + (i + 1) + " / " + avs.length + " 个视频爬取完毕");
 								} else {
 									if (Config.spider_config.HISTORICAL) {
 										OutputManager.saveToXml(chatStr,
-												OutputManager.getFile().getPath() + "\\" + "[历史弹幕] "
+												OutputManager.getFile().getPath() + File.separator + "[历史弹幕] "
 														+ OutputManager.replaceFileName(name + " - " + title + " （P"
 																+ (j + 1) + "：" + getPageName(data, j) + "）.xml"));
 									} else {
 										OutputManager.saveToXml(chatStr,
-												OutputManager.getFile().getPath() + "\\"
+												OutputManager.getFile().getPath() + File.separator
 														+ OutputManager.replaceFileName(name + " - " + title + " （P"
 																+ (j + 1) + "：" + getPageName(data, j) + "）.xml"));
 									}
@@ -384,12 +385,12 @@ public class Spider implements Runnable {
 									continue;
 								}
 								if (pages.length == 1) {
-									OutputManager.saveToXml(chatStr, OutputManager.getFile().getPath() + "\\"
+									OutputManager.saveToXml(chatStr, OutputManager.getFile().getPath() + File.separator
 											+ OutputManager.replaceFileName(up.name + " - " + title + ".xml"));
 									MainGui.getInstance().log("第 " + (i + 1) + " / " + avs.length + " 个视频爬取完毕");
 								} else {
 									OutputManager.saveToXml(chatStr,
-											OutputManager.getFile().getPath() + "\\"
+											OutputManager.getFile().getPath() + File.separator
 													+ OutputManager.replaceFileName(up.name + " - " + title + " （P"
 															+ (j + 1) + "：" + getPageName(data, j) + "）.xml"));
 									MainGui.getInstance().log("第 " + (i + 1) + " / " + avs.length + " 个视频（P" + (j + 1)

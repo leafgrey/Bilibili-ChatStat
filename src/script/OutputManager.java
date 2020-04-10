@@ -266,7 +266,7 @@ public class OutputManager {
 		file.mkdirs();
 		for (int i = 0; i < data.length; i++) {
 			try {
-				File subFile = new File(file.getPath() + "\\" + fileNames[i]);
+				File subFile = new File(file.getPath() + File.separator + fileNames[i]);
 				FileOutputStream fos = new FileOutputStream(subFile);
 				fos.write(new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF });
 				FileWriter fileWriter = new FileWriter(subFile.getAbsoluteFile());

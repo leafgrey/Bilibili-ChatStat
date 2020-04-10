@@ -103,7 +103,7 @@ public class FileManager {
 			fileChooser.setFileFilter(new FileNameExtensionFilter("*.xml", "xml"));
 		} else if (mode == 3) {
 			fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			File dir = new File(fileChooser.getCurrentDirectory() + "\\" + replaceFileName(fileName) + "\\");
+			File dir = new File(fileChooser.getCurrentDirectory() + File.separator + replaceFileName(fileName) + File.separator);
 			defaultDir = dir;
 			dirExists = dir.exists();
 			dir.mkdir();
