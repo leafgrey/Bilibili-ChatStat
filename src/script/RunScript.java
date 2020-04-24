@@ -518,7 +518,7 @@ public class RunScript implements Runnable {
 							months++;
 						}
 						count.set(count.size() - 1, 1);
-					} catch (ArrayIndexOutOfBoundsException e) {
+					} catch (IndexOutOfBoundsException e) {
 						out_date.add(chat_date.get(j));
 						count.add(1);
 					}
@@ -602,7 +602,7 @@ public class RunScript implements Runnable {
 							days++;
 						}
 						count.set(count.size() - 1, 1);
-					} catch (ArrayIndexOutOfBoundsException e) {
+					} catch (IndexOutOfBoundsException e) {
 						out_date.add(chat_date.get(j));
 						count.add(1);
 					}

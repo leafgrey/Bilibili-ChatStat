@@ -12,17 +12,24 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -46,7 +53,6 @@ import script.CsvReader;
 import script.OutputManager;
 import script.RunScript;
 import script.Spider;
-import javax.swing.JCheckBox;
 
 /**
  * 主窗口
@@ -70,6 +76,7 @@ public class MainGui implements Runnable {
 	private TabPanel tab6;
 	private JPanel tab7;
 	private JPanel tab8;
+	private JPanel tab9;
 	private JList<String> list;
 	private JButton button_add_files;
 	private JButton button_delete_files;
@@ -121,6 +128,7 @@ public class MainGui implements Runnable {
 	private JButton button_clear;
 	private boolean long_clicked = false;
 	private JCheckBox check_historical;
+	private JButton export;
 
 	/**
 	 * 主方法
@@ -673,8 +681,146 @@ public class MainGui implements Runnable {
 		tab7.setLayout(new BorderLayout(0, 0));
 
 		tab8 = new JPanel();
-		tabbedPane.addTab("关于 ChatStat", null, tab8, null);
+		tabbedPane.addTab("xml弹幕截取", null, tab8, null);
 		tab8.setLayout(new BorderLayout(0, 0));
+		BoxLayout boxLayout = new BoxLayout(tab8, BoxLayout.Y_AXIS);
+		tab8.setLayout(boxLayout);
+		JTextArea area = new JTextArea();
+		area.setEditable(false);
+		area.setLineWrap(true);
+		area.setBackground(new Color(240, 240, 240));
+		area.setText(
+				"【弹幕截取】\n该功能可截取弹幕的一部分。纯正则表达式实现，没有用Dom4j。\n【只允许导入一个xml文件。】\n输出xml文件名为原文件名末尾加“_截取”（如文件已存在，将自动覆盖），和原文件同目录。\n该功能不支持高级弹幕匹配规则等。\n注：可能存在bug，开发者没时间优化UI以及调试了。\n\n\n\n\n");
+		tab8.add(area);
+		JPanel panel_start = new JPanel();
+		panel_start.setLayout(new BorderLayout(0, 0));
+		JLabel label_start = new JLabel("起始时间（秒数）");
+		panel_start.add(label_start);
+		JTextField field_start = new JTextField();
+		panel_start.add(field_start, BorderLayout.EAST);
+		field_start.setColumns(20);
+		JPanel panel_end = new JPanel();
+		panel_end.setLayout(new BorderLayout(0, 0));
+		JLabel label_end = new JLabel("终止时间（秒数），不设置则截取到最后一条弹幕");
+		panel_end.add(label_end);
+		JTextField field_end = new JTextField();
+		panel_end.add(field_end, BorderLayout.EAST);
+		field_end.setColumns(20);
+		JLabel logLabel = new JLabel();
+		logLabel.setText("我是日志");
+		export = new JButton("导出");
+		tab8.add(panel_start);
+		tab8.add(panel_end);
+		tab8.add(logLabel);
+		tab8.add(export);
+		export.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							if (list.getModel().getSize() != 1) {
+								new Dialog("错误", "请导入一个xml文件（只能是一个）。").setVisible(true);
+								return;
+							} else {
+								File xml = new File(list.getModel().getElementAt(0));
+								float start = 0;
+								float end = -1;
+								try {
+									start = Float.parseFloat(field_start.getText().trim());
+									if (start < 0) {
+										throw new IllegalArgumentException();
+									}
+								} catch (Exception er) {
+									new Dialog("错误", "起始时间输入异常。").setVisible(true);
+								}
+								if (!field_end.getText().trim().isEmpty()) {
+									try {
+										end = Float.parseFloat(field_end.getText().trim());
+										if (start < 0) {
+											throw new IllegalArgumentException();
+										}
+									} catch (Exception er) {
+										new Dialog("错误", "终止时间输入异常。").setVisible(true);
+									}
+								}
+								StringBuilder xmlString = new StringBuilder();
+								BufferedReader bufferedReader = new BufferedReader(
+										new InputStreamReader(new FileInputStream(xml), "UTF-8"));
+								String string;
+								setEnabled(false);
+								logLabel.setText("初始化完毕");
+								while ((string = bufferedReader.readLine()) != null) {
+									xmlString.append(string);
+								}
+								bufferedReader.close();
+								logLabel.setText("读取xml文件完毕");
+								String finalString = xmlString.toString();
+								Pattern pattern = Pattern.compile("<d p=\".*?</d>");// 匹配整条弹幕
+								Matcher matcher = pattern.matcher(finalString);
+								ArrayList<String> list = new ArrayList<>();
+								int count = 0;
+								while (matcher.find()) {
+									count++;
+									logLabel.setText("正在读取弹幕 - 已找到" + count + "条");
+									String tmp = matcher.group();
+									String replace = tmp.replaceAll("<d p=\"", "").replaceAll(",.*", "");
+									Float num = Float.parseFloat(replace);
+									if ((end != -1) && num > end) {
+										finalString = finalString.replace(tmp, "");
+										continue;
+									}
+									if (num < start) {
+										finalString = finalString.replace(tmp, "");
+										continue;
+									}
+									list.add(tmp);
+								}
+								for (int i = 0; i < list.size(); i++) {
+									logLabel.setText("正在替换弹幕 " + (i + 1) + " / " + list.size());
+									String replace = list.get(i).replaceAll("<d p=\"", "").replaceAll(",.*", "");
+									String replace2 = list.get(i).replaceAll("<d p=\".*?,", "").replaceAll("</d>",
+											"<tmp>");
+									Float num = Float.parseFloat(replace);
+									finalString = finalString.replace(list.get(i),
+											"<d p=\"" + (num - start) + "," + replace2);
+								}
+								logLabel.setText("正在完成最终替换");
+								finalString = finalString.replace("<tmp>", "</d>");
+								logLabel.setText("替换弹幕完毕，正在输出文件");
+								File file = new File(xml.getParentFile().getPath() + File.separator
+										+ xml.getName().replaceAll("\\.[Xx][Mm][Ll]$", "_截取.xml"));
+								file.mkdirs();
+								if (file.exists()) {
+									file.delete();
+								}
+								file.createNewFile();
+								FileOutputStream fos = new FileOutputStream(file);
+								//fos.write(new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF });
+								OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
+								BufferedWriter bw = new BufferedWriter(osw);
+								bw.write(finalString);
+								bw.close();
+								logLabel.setText("成功！");
+								setEnabled(true);
+							}
+
+						} catch (Exception err) {
+							err.printStackTrace();
+							logLabel.setText("失败！");
+							setEnabled(true);
+							new Dialog("错误", "出错了，请检查弹幕文件是否异常。如果是程序代码出错，开发者没时间调试了，去提个issue吧：）\n" + err.toString())
+									.setVisible(true);
+						}
+					}
+				}).start();
+			}
+		});
+
+		tab9 = new JPanel();
+		tabbedPane.addTab("关于 ChatStat", null, tab9, null);
+		tab9.setLayout(new BorderLayout(0, 0));
 
 		about = new JTextArea();
 		about.setBackground(new Color(240, 240, 240));
@@ -682,10 +828,10 @@ public class MainGui implements Runnable {
 		about.setLineWrap(true);
 		about.setText(
 				"（我才不会告诉你下面是从README.md里摘录的呢）\n该项目是用swing开发的GUI程序，支持各项弹幕统计、单个或批量视频弹幕爬取、直播间弹幕爬取，详见下文。\n开发者：Jelly Black\n哔哩哔哩 (゜-゜)つロ 干杯~\n\n本项目仅用于统计分析（例如你可以统计阿伟在某个UP主下死了多少次），不可用于非法用途。\n开发者不能确定滥用爬虫是否会导致 你 号 没 了 ，所以进行爬取时您可以在网页端退出哔哩哔哩账号，为了保险可以清浏览器缓存，甚至还可以使用IP代理。（如果你不做大量爬取，或者你是 封 号 斗 罗 ，请忽略）\n\n开发者的联系方式：\nQQ：1574854804\nEmail：l45531@126.com\n哔哩哔哩 / Github：JellyBlack");
-		tab8.add(about);
+		tab9.add(about);
 
 		panel = new JPanel();
-		tab8.add(panel, BorderLayout.SOUTH);
+		tab9.add(panel, BorderLayout.SOUTH);
 		panel.setLayout(new GridLayout(1, 0, 1, 0));
 
 		button_1 = new JButton("点此访问Github源代码仓库");
@@ -996,6 +1142,7 @@ public class MainGui implements Runnable {
 		button_delete_files.setEnabled(b);
 		button_start.setEnabled(b);
 		tabbedPane.setEnabled(b);
+		export.setEnabled(b);
 		tab1.setEnabled(b);
 		tab2.setEnabled(b);
 		tab3.setEnabled(b);
@@ -1004,6 +1151,7 @@ public class MainGui implements Runnable {
 		tab6.setEnabled(b);
 		tab7.setEnabled(b);
 		tab8.setEnabled(b);
+		tab9.setEnabled(b);
 	}
 
 	/**
